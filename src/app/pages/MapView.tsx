@@ -1,245 +1,273 @@
-import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Map, MapMarker, CustomOverlayMap } from "react-kakao-maps-sdk";
+import { mockStations } from "../services/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { mockStations, ChargingStation } from "../services/mockData";
-import { Battery, Zap, AlertCircle } from "lucide-react";
-
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
+import {
+    BatteryCharging, X, MapPin, AlertCircle, CheckCircle2,
+    ChevronRight, Sun, Zap, Activity, Car
+} from "lucide-react";
 
 export function MapView() {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+    // 선택된 마커 ID, 지도 중심 좌표, 그리고 세부정보 패널 열림 상태 관리
+    const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
+    const [mapCenter, setMapCenter] = useState({ lat: 37.5326, lng: 126.9900 });
+    const [showDetail, setShowDetail] = useState(false);
 
-  const { data: stations } = useQuery({
-    queryKey: ["stations"],
-    queryFn: () => Promise.resolve(mockStations),
-  });
+    // 요약 통계 계산
+    const totalStations = mockStations.length;
+    const activeStations = mockStations.filter(s => s.status === 'active').length;
+    const warningStations = mockStations.filter(s => s.status !== 'active').length;
 
-  // Load Kakao Maps SDK
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&autoload=false`;
-    script.async = true;
-    
-    script.onload = () => {
-      window.kakao.maps.load(() => {
-        setMapLoaded(true);
-      });
-    };
-    
-    document.head.appendChild(script);
+    // 선택된 충전소 객체 찾기
+    const selectedStation = mockStations.find(s => s.id === selectedStationId);
 
-    return () => {
-      document.head.removeChild(script);
-    };
-  }, []);
-
-  // Initialize map
-  useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !stations) return;
-
-    const container = mapRef.current;
-    const options = {
-      center: new window.kakao.maps.LatLng(37.5665, 126.9780), // Seoul
-      level: 7,
+    // 리스트나 마커 클릭 시 해당 위치로 지도 이동 및 오버레이 띄우기
+    const handleStationClick = (station: typeof mockStations[0]) => {
+        setSelectedStationId(station.id);
+        setMapCenter({ lat: station.lat, lng: station.lng });
+        setShowDetail(false); // 다른 마커 클릭 시 세부정보 창은 일단 닫음
     };
 
-    const map = new window.kakao.maps.Map(container, options);
+    return (
+        <div className="relative h-[calc(100vh-6rem)] w-full rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-slate-50">
 
-    // Add markers
-    stations.forEach((station) => {
-      const markerPosition = new window.kakao.maps.LatLng(station.lat, station.lng);
-      
-      // Custom marker content
-      const content = `
-        <div style="
-          background: ${
-            station.status === "active"
-              ? "#10b981"
-              : station.status === "warning"
-              ? "#f59e0b"
-              : "#ef4444"
-          };
-          color: white;
-          padding: 8px 12px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: bold;
-          white-space: nowrap;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          cursor: pointer;
-        ">
-          ${station.name}
-        </div>
-      `;
-
-      const customOverlay = new window.kakao.maps.CustomOverlay({
-        position: markerPosition,
-        content: content,
-        yAnchor: 1,
-      });
-
-      customOverlay.setMap(map);
-
-      // Add click event
-      const overlayElement = customOverlay.a;
-      if (overlayElement) {
-        overlayElement.addEventListener("click", () => {
-          setSelectedStation(station);
-          map.setCenter(markerPosition);
-          map.setLevel(5);
-        });
-      }
-    });
-  }, [mapLoaded, stations]);
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">충전소 위치 지도</h1>
-        <p className="text-slate-600 mt-1">실시간 충전소 상태 및 위치 모니터링</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map */}
-        <Card className="lg:col-span-2">
-          <CardContent className="p-0">
-            <div
-              ref={mapRef}
-              className="w-full h-[600px] rounded-lg"
-              style={{ background: "#f1f5f9" }}
-            >
-              {!mapLoaded && (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-slate-600">지도를 불러오는 중...</p>
-                    <p className="text-sm text-slate-500 mt-2">
-                      카카오 맵 API 키가 필요합니다
-                    </p>
-                  </div>
-                </div>
-              )}
+            {/* 1. 카카오맵 영역 (전체 배경) */}
+            <div className="absolute inset-0 w-full h-full z-0">
+                <Map
+                    center={mapCenter}
+                    style={{ width: "100%", height: "100%" }}
+                    level={7}
+                    onClick={() => {
+                        setSelectedStationId(null);
+                        setShowDetail(false);
+                    }}
+                >
+                    {mockStations.map((station) => (
+                        <div key={station.id}>
+                            <MapMarker
+                                position={{ lat: station.lat, lng: station.lng }}
+                                onClick={() => handleStationClick(station)}
+                            />
+                            {/* 클릭 시 나타나는 마커 오버레이 */}
+                            {selectedStationId === station.id && !showDetail && (
+                                <CustomOverlayMap
+                                    position={{ lat: station.lat, lng: station.lng }}
+                                    yAnchor={1.2}
+                                    clickable={true} // 👈 이 속성을 반드시 추가해야 버튼이 눌립니다!
+                                >
+                                    <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-4 w-64 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-bold text-slate-800">{station.name}</h3>
+                                            <button
+                                                onClick={() => setSelectedStationId(null)}
+                                                className="text-slate-400 hover:text-slate-600 transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-2 text-sm mt-3 mb-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">상태</span>
+                                                <Badge variant="outline" className={station.status === 'active' ? 'text-green-600 border-green-200 bg-green-50' : 'text-amber-600 border-amber-200 bg-amber-50'}>
+                                                    {station.status === 'active' ? '정상 작동' : '점검 필요'}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-slate-500">ESS 잔량</span>
+                                                <div className="flex items-center gap-1 font-medium">
+                                                    <BatteryCharging className="w-4 h-4 text-blue-500" />
+                                                    {station.batteryLevel.toFixed(1)}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {/* 세부정보 보기 버튼 */}
+                                        <Button
+                                            className="w-full h-8 text-xs gap-1 bg-slate-900 hover:bg-slate-800"
+                                            onClick={() => setShowDetail(true)}
+                                        >
+                                            충전소 세부정보 보기
+                                            <ChevronRight className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                </CustomOverlayMap>
+                            )}
+                        </div>
+                    ))}
+                </Map>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Station Details */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>충전소 상세 정보</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedStation ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg">{selectedStation.name}</h3>
-                    <p className="text-sm text-slate-600">ID: {selectedStation.id}</p>
-                  </div>
+            {/* 2. 좌측 플로팅 요약 및 리스트 영역 */}
+            <div className="absolute top-4 left-4 z-10 w-80 max-h-[calc(100%-2rem)] flex flex-col gap-4 overflow-y-auto [&::-webkit-scrollbar]:hidden pr-1 pb-4">
+                <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-md">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-xl font-bold text-slate-900">실시간 관제 맵</CardTitle>
+                        <p className="text-sm text-slate-500 mt-1">충전소 위치 및 상태 통합 모니터링</p>
+                    </CardHeader>
+                </Card>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">상태</span>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs ${
-                          selectedStation.status === "active"
-                            ? "bg-green-100 text-green-800"
-                            : selectedStation.status === "warning"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {selectedStation.status === "active"
-                          ? "정상"
-                          : selectedStation.status === "warning"
-                          ? "경고"
-                          : "오류"}
-                      </span>
-                    </div>
+                <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-md">
+                    <CardContent className="p-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-sm font-semibold text-slate-700">전체 충전소</span>
+                            <span className="text-lg font-bold">{totalStations}개소</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-green-50 p-3 rounded-xl flex flex-col items-center border border-green-100">
+                                <CheckCircle2 className="w-5 h-5 text-green-500 mb-1.5" />
+                                <span className="text-xs text-slate-600">정상 작동</span>
+                                <span className="font-bold text-green-700 text-lg">{activeStations}</span>
+                            </div>
+                            <div className="bg-amber-50 p-3 rounded-xl flex flex-col items-center border border-amber-100">
+                                <AlertCircle className="w-5 h-5 text-amber-500 mb-1.5" />
+                                <span className="text-xs text-slate-600">점검/경고</span>
+                                <span className="font-bold text-amber-700 text-lg">{warningStations}</span>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    <div className="border-t pt-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium">충전 현황</span>
-                      </div>
-                      <div className="text-2xl font-bold">
-                        {selectedStation.currentVehicles} / {selectedStation.maxCapacity}
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full transition-all"
-                          style={{
-                            width: `${
-                              (selectedStation.currentVehicles / selectedStation.maxCapacity) * 100
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </div>
+                <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-md flex-1">
+                    <CardHeader className="py-3 px-4 border-b border-slate-100">
+                        <CardTitle className="text-sm font-semibold text-slate-800">충전소 목록</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <div className="flex flex-col">
+                            {mockStations.map((station) => (
+                                <button
+                                    key={station.id}
+                                    onClick={() => handleStationClick(station)}
+                                    className={`flex flex-col p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors text-left ${
+                                        selectedStationId === station.id ? 'bg-blue-50/60' : ''
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start w-full mb-1">
+                    <span className="font-medium text-sm text-slate-800 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                        {station.name}
+                    </span>
+                                        <Badge variant="outline" className={`text-[10px] px-2 py-0 border-0 ${
+                                            station.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                        }`}>
+                                            {station.status === 'active' ? '정상' : '경고'}
+                                        </Badge>
+                                    </div>
+                                    <div className="text-xs text-slate-500 pl-5">
+                                        ESS: {station.batteryLevel.toFixed(1)}% | 차량: {station.currentVehicles}대
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
-                    <div className="border-t pt-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Battery className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium">ESS 잔량</span>
-                      </div>
-                      <div className="text-2xl font-bold">{selectedStation.batteryLevel.toFixed(1)}%</div>
-                      <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full transition-all"
-                          style={{ width: `${selectedStation.batteryLevel}%` }}
-                        />
-                      </div>
-                    </div>
+            {/* 3. 하단 세부정보 패널 (상세 정보 보기 클릭 시 올라옴) */}
+            {showDetail && selectedStation && (
+                <div className="absolute bottom-4 right-4 left-[22rem] z-20 animate-in slide-in-from-bottom-8 fade-in duration-300">
+                    <Card className="shadow-2xl border-slate-200 bg-white/95 backdrop-blur-xl">
+                        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <CardTitle className="text-xl font-bold flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-blue-600" />
+                                    {selectedStation.name} 상세 정보
+                                </CardTitle>
+                                <Badge variant="outline" className={selectedStation.status === 'active' ? 'text-green-600 border-green-600' : 'text-amber-600 border-amber-600'}>
+                                    {selectedStation.status === 'active' ? '정상 가동 중' : '시스템 점검 필요'}
+                                </Badge>
+                            </div>
+                            <button
+                                onClick={() => setShowDetail(false)}
+                                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </CardHeader>
+                        <CardContent className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-                    <div className="border-t pt-3 space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">태양광 발전</span>
-                        <span className="font-medium">{selectedStation.solarGeneration.toFixed(1)} kW</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">계통 사용</span>
-                        <span className="font-medium">{selectedStation.gridConsumption.toFixed(1)} kW</span>
-                      </div>
-                    </div>
-                  </div>
+                                {/* 패널 1: 충전 현황 */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                                        <Car className="w-4 h-4 text-blue-500" /> 전기차 충전 현황
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="text-slate-500">현재 충전 중</span>
+                                            <span className="font-bold">{selectedStation.currentVehicles} / {selectedStation.maxCapacity} 대</span>
+                                        </div>
+                                        <Progress value={(selectedStation.currentVehicles / selectedStation.maxCapacity) * 100} className="h-2" />
+                                    </div>
+                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                        현재 {((selectedStation.currentVehicles / selectedStation.maxCapacity) * 100).toFixed(0)}%의 충전기가 사용 중입니다.
+                                        {selectedStation.currentVehicles >= selectedStation.maxCapacity * 0.8 ? ' 혼잡 상태입니다.' : ' 여유가 있습니다.'}
+                                    </p>
+                                </div>
+
+                                {/* 패널 2: ESS 배터리 */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                                        <BatteryCharging className="w-4 h-4 text-emerald-500" /> ESS 배터리 상태
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="text-slate-500">잔여 용량 (SoC)</span>
+                                            <span className="font-bold text-emerald-600">{selectedStation.batteryLevel.toFixed(1)}%</span>
+                                        </div>
+                                        <Progress value={selectedStation.batteryLevel} className="h-2 [&>div]:bg-emerald-500" />
+                                    </div>
+                                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg text-xs">
+                                        <span className="text-slate-500">AI 권장 동작</span>
+                                        <span className="font-semibold text-slate-700">
+                      {selectedStation.batteryLevel > 70 ? '피크 시간 방전 대기' : '심야 시간 충전 예정'}
+                    </span>
+                                    </div>
+                                </div>
+
+                                {/* 패널 3: 전력 흐름 */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                                        <Zap className="w-4 h-4 text-amber-500" /> 실시간 전력 흐름
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-slate-500 flex items-center gap-1.5"><Sun className="w-3.5 h-3.5" /> 태양광 발전</span>
+                                            <span className="text-sm font-bold text-orange-500">+{selectedStation.solarGeneration.toFixed(1)} kW</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-slate-500 flex items-center gap-1.5"><Zap className="w-3.5 h-3.5" /> 계통 전력 구매</span>
+                                            <span className="text-sm font-bold text-blue-600">+{selectedStation.gridConsumption.toFixed(1)} kW</span>
+                                        </div>
+                                        <div className="pt-2 border-t border-slate-100 flex justify-between items-center">
+                                            <span className="text-xs font-medium text-slate-700">총 소비 전력</span>
+                                            <span className="text-sm font-bold text-slate-900">{(selectedStation.solarGeneration + selectedStation.gridConsumption).toFixed(1)} kW</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 패널 4: AI 최적화 진단 */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-slate-700 font-semibold">
+                                        <Activity className="w-4 h-4 text-indigo-500" /> AI 시스템 진단
+                                    </div>
+                                    <div className="bg-indigo-50/50 border border-indigo-100 p-3 rounded-xl h-[calc(100%-2rem)] flex flex-col justify-center">
+                                        <p className="text-xs text-indigo-900 leading-relaxed">
+                                            <strong>실시간 분석: </strong>
+                                            현재 태양광 발전량이 안정적이며, 확보된 ESS 잔량을 활용하여 오후 피크 시간대(14:00~16:00) 계통 전력 구매를 최소화하도록 스케줄링 되었습니다.
+                                        </p>
+                                        <div className="mt-2 text-[10px] text-indigo-500 font-medium text-right">
+                                            최종 업데이트: 방금 전
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>지도에서 충전소를 선택하세요</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Legend */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">상태 범례</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-green-500" />
-                <span className="text-sm">정상 운영</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-amber-500" />
-                <span className="text-sm">경고 (90% 이상 사용)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-red-500" />
-                <span className="text-sm">오류 (시스템 이상)</span>
-              </div>
-            </CardContent>
-          </Card>
+            )}
         </div>
-      </div>
-    </div>
-  );
+    );
 }

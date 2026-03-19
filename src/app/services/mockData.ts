@@ -105,15 +105,28 @@ export const mockStations: ChargingStation[] = [
     gridConsumption: 45.6,
   },
 ];
-
+let currentWeaterState = { temp: 22.5, hum: 45, cloud: 30, solar: 450 };
 // Generate weather data
-export const generateWeatherData = (): WeatherData => ({
-  temperature: 18 + Math.random() * 10,
-  humidity: 45 + Math.random() * 30,
-  cloudCover: Math.random() * 100,
-  solarRadiation: 300 + Math.random() * 500,
-  timestamp: new Date().toISOString(),
-});
+export const generateWeatherData = (): WeatherData => {
+  // 5초마다 미세하게 값 변동
+  currentWeaterState.temp += (Math.random() - 0.5) * 0.5;
+  currentWeaterState.hum += (Math.random() - 0.5) * 2;
+  currentWeaterState.cloud += (Math.random() - 0.5) * 5;
+  currentWeaterState.solar += (Math.random() - 0.5) * 20;
+
+  // 값 범위 제한
+  currentWeaterState.hum = Math.max(0, Math.min(100, currentWeaterState.hum));
+  currentWeaterState.cloud = Math.max(0, Math.min(100, currentWeaterState.cloud));
+  currentWeaterState.solar = Math.max(0, currentWeaterState.solar);
+
+  return {
+    temperature: currentWeaterState.temp,
+    humidity: currentWeaterState.hum,
+    cloudCover: currentWeaterState.cloud,
+    solarRadiation: currentWeaterState.solar,
+    timestamp: new Date().toISOString(),
+  };
+};
 
 // Generate AI metrics
 export const generateAIMetrics = (): AIMetrics => ({
@@ -153,14 +166,33 @@ export const generateCostComparison = (): CostComparison[] => {
   }));
 };
 
-// Generate hourly power consumption data
+// 현재 시간 기준 향후 24시간의 전력 예측 데이터 생성 (실제 소비 제외)
 export const generateHourlyPowerData = () => {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: `${i.toString().padStart(2, '0')}:00`,
-    consumption: 80 + Math.random() * 120,
-    generation: i >= 6 && i < 18 ? 30 + Math.random() * 60 : 0,
-    demand: 100 + Math.random() * 80,
-  }));
+  const currentHour = new Date().getHours();
+
+  return Array.from({ length: 24 }, (_, i) => {
+    const targetHour = (currentHour + i) % 24;
+    const timeLabel = `${targetHour.toString().padStart(2, '0')}:00`;
+
+    // 시간대별 패턴 (낮 시간대, 피크 시간대 반영)
+    const isDaytime = targetHour >= 7 && targetHour <= 18;
+    const isPeak = targetHour >= 10 && targetHour <= 16;
+
+    // 실시간으로 변동하는 느낌을 주기 위한 랜덤 값 추가
+    const noise = Math.random() * 15;
+
+    // 예상 발전량 (낮에만 발전)
+    const predictedSolar = isDaytime ? 40 + noise + (isPeak ? 30 : 0) : 0;
+
+    // 예상 수요 (활동 시간에 증가)
+    const predictedDemand = 80 + noise + (targetHour >= 8 && targetHour <= 22 ? 50 : 0) + (isPeak ? 40 : 0);
+
+    return {
+      time: timeLabel,
+      predictedDemand: Math.round(predictedDemand),
+      predictedSolar: Math.round(predictedSolar),
+    };
+  });
 };
 
 // Generate daily statistics for a month

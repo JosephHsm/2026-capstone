@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
-import { Slider } from "../components/ui/slider";
 import { Badge } from "../components/ui/badge";
 import {
   Table,
@@ -27,8 +26,6 @@ import {
 import { mockStations } from "../services/mockData";
 import {
   Power,
-  PlayCircle,
-  PauseCircle,
   RefreshCw,
   AlertTriangle,
   CheckCircle,
@@ -51,9 +48,7 @@ const generateAICommands = () => {
 
 export function AdminConsole() {
   const [aiEnabled, setAIEnabled] = useState(true);
-  const [manualMode, setManualMode] = useState(false);
   const [selectedStation, setSelectedStation] = useState<string | null>(null);
-  const [powerLimit, setPowerLimit] = useState([80]);
 
   const { data: stations } = useQuery({
     queryKey: ["stations"],
@@ -71,7 +66,6 @@ export function AdminConsole() {
       toast.success("AI 자동 제어가 활성화되었습니다");
     } else {
       toast.warning("AI 자동 제어가 비활성화되었습니다");
-      setManualMode(true);
     }
   };
 
@@ -83,355 +77,275 @@ export function AdminConsole() {
     toast.success(`${stationId} 재시작 명령이 전송되었습니다`);
   };
 
-  const handleManualCharge = () => {
-    if (!selectedStation) {
-      toast.error("충전소를 선택해주세요");
-      return;
-    }
-    toast.success(`${selectedStation} ESS 충전 명령이 전송되었습니다`);
-  };
-
-  const handleManualDischarge = () => {
-    if (!selectedStation) {
-      toast.error("충전소를 선택해주세요");
-      return;
-    }
-    toast.success(`${selectedStation} ESS 방전 명령이 전송되었습니다`);
-  };
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">관리자 콘솔</h1>
-        <p className="text-slate-600 mt-1">시스템 제어 및 수동 조작 패널</p>
-      </div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">관리자 콘솔</h1>
+          <p className="text-slate-600 mt-1">시스템 제어 및 수동 조작 패널</p>
+        </div>
 
-      {/* System Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-green-600" />
-              시스템 상태
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold">정상 작동 중</span>
-              <Badge variant="default" className="bg-green-600">
-                <CheckCircle className="w-3 h-3 mr-1" />
-                ONLINE
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-600 mt-2">가동 시간: 72일 15시간</p>
-          </CardContent>
-        </Card>
+        {/* System Status */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Activity className="w-4 h-4 text-green-600" />
+                시스템 상태
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-semibold">정상 작동 중</span>
+                <Badge variant="default" className="bg-green-600">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  ONLINE
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600 mt-2">가동 시간: 72일 15시간</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Settings className="w-4 h-4 text-blue-600" />
-              AI 자동 제어
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Settings className="w-4 h-4 text-blue-600" />
+                AI 자동 제어
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">
                 {aiEnabled ? "활성화" : "비활성화"}
               </span>
-              <Switch checked={aiEnabled} onCheckedChange={handleToggleAI} />
-            </div>
-            <p className="text-xs text-slate-600 mt-2">
-              {aiEnabled ? "AI가 자동으로 최적화 중" : "수동 제어 모드"}
-            </p>
+                <Switch checked={aiEnabled} onCheckedChange={handleToggleAI} />
+              </div>
+              <p className="text-xs text-slate-600 mt-2">
+                {aiEnabled ? "AI가 자동으로 최적화 중" : "수동 제어 모드"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                알림 및 경고
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <span className="text-lg font-semibold">2건</span>
+                <Badge variant="outline" className="text-amber-600 border-amber-600">
+                  경고
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600 mt-2">잠실: 높은 사용률, 판교: 낮은 ESS</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* AI Command History */}
+        <Card>
+          <CardHeader>
+            <CardTitle>AI 제어 명령 이력</CardTitle>
+            <p className="text-sm text-slate-600">최근 AI가 실행한 제어 명령</p>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>시간</TableHead>
+                  <TableHead>충전소</TableHead>
+                  <TableHead>제어 명령</TableHead>
+                  <TableHead className="text-right">전력 (kW)</TableHead>
+                  <TableHead>상태</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {aiCommands?.map((cmd, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-mono text-sm">{cmd.time}</TableCell>
+                      <TableCell>{cmd.station}</TableCell>
+                      <TableCell>{cmd.action}</TableCell>
+                      <TableCell className="text-right font-medium">{cmd.power}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-green-600 border-green-600">
+                          {cmd.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
+        {/* Manual Control Panel */}
+        <Card className={!aiEnabled ? "border-blue-500 border-2" : ""}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>수동 제어 패널</CardTitle>
+                <p className="text-sm text-slate-600 mt-1">비상 시 직접 제어 기능</p>
+              </div>
+              {!aiEnabled && (
+                  <Badge variant="default" className="bg-blue-600">
+                    수동 모드 활성
+                  </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Station Selection */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">제어 대상 충전소 선택</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                {stations?.map((station) => (
+                    <Button
+                        key={station.id}
+                        variant={selectedStation === station.id ? "default" : "outline"}
+                        onClick={() => setSelectedStation(station.id)}
+                        className="justify-start"
+                    >
+                      {station.name}
+                    </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Control Buttons (긴급 정지만 남김) */}
+            <div className="pt-2">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                      variant="destructive"
+                      className="gap-2 w-full md:w-auto"
+                      disabled={!selectedStation}
+                  >
+                    <AlertTriangle className="w-4 h-4" />
+                    선택 충전소 긴급 정지
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>긴급 정지</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      선택한 충전소를 즉시 긴급 정지합니다. 이 작업은 즉시 실행되며 되돌릴 수 없습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction
+                        onClick={() => selectedStation && handleEmergencyStop(selectedStation)}
+                        className="bg-red-600 hover:bg-red-700"
+                    >
+                      긴급 정지 실행
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+
+            {aiEnabled && (
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-900">
+                    <strong>알림:</strong> AI 자동 제어가 활성화되어 있습니다. 수동 제어를
+                    사용하려면 상단의 AI 자동 제어를 비활성화해주세요.
+                  </p>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Station Control Table */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              알림 및 경고
-            </CardTitle>
+          <CardHeader>
+            <CardTitle>충전소별 제어 패널</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold">2건</span>
-              <Badge variant="outline" className="text-amber-600 border-amber-600">
-                경고
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-600 mt-2">잠실: 높은 사용률, 판교: 낮은 ESS</p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>충전소</TableHead>
+                  <TableHead>충전 상태</TableHead>
+                  <TableHead>ESS 잔량</TableHead>
+                  <TableHead>현재 전력</TableHead>
+                  <TableHead className="text-right">제어</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {stations?.map((station) => (
+                    <TableRow key={station.id}>
+                      <TableCell className="font-medium">{station.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                            variant="outline"
+                            className={
+                              station.status === "active"
+                                  ? "text-green-600 border-green-600"
+                                  : station.status === "warning"
+                                      ? "text-amber-600 border-amber-600"
+                                      : "text-red-600 border-red-600"
+                            }
+                        >
+                          {station.status === "active"
+                              ? "정상"
+                              : station.status === "warning"
+                                  ? "경고"
+                                  : "오류"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-slate-200 rounded-full h-2">
+                            <div
+                                className="bg-green-600 h-2 rounded-full"
+                                style={{ width: `${station.batteryLevel}%` }}
+                            />
+                          </div>
+                          <span className="text-sm">{station.batteryLevel.toFixed(0)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{station.gridConsumption.toFixed(1)} kW</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRestart(station.id)}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              <Power className="w-3 h-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{station.name} 긴급 정지</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                이 충전소를 긴급 정지하시겠습니까?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>취소</AlertDialogCancel>
+                              <AlertDialogAction
+                                  onClick={() => handleEmergencyStop(station.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                              >
+                                정지
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
-
-      {/* AI Command History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>AI 제어 명령 이력</CardTitle>
-          <p className="text-sm text-slate-600">최근 AI가 실행한 제어 명령</p>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>시간</TableHead>
-                <TableHead>충전소</TableHead>
-                <TableHead>제어 명령</TableHead>
-                <TableHead className="text-right">전력 (kW)</TableHead>
-                <TableHead>상태</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {aiCommands?.map((cmd, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-mono text-sm">{cmd.time}</TableCell>
-                  <TableCell>{cmd.station}</TableCell>
-                  <TableCell>{cmd.action}</TableCell>
-                  <TableCell className="text-right font-medium">{cmd.power}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      {cmd.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Manual Control Panel */}
-      <Card className={!aiEnabled ? "border-blue-500 border-2" : ""}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>수동 제어 패널</CardTitle>
-              <p className="text-sm text-slate-600 mt-1">비상 시 직접 제어 기능</p>
-            </div>
-            {!aiEnabled && (
-              <Badge variant="default" className="bg-blue-600">
-                수동 모드 활성
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Station Selection */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">제어 대상 충전소 선택</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-              {stations?.map((station) => (
-                <Button
-                  key={station.id}
-                  variant={selectedStation === station.id ? "default" : "outline"}
-                  onClick={() => setSelectedStation(station.id)}
-                  className="justify-start"
-                >
-                  {station.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Power Limit Control */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              전력 제한 설정: {powerLimit[0]}%
-            </label>
-            <Slider
-              value={powerLimit}
-              onValueChange={setPowerLimit}
-              max={100}
-              step={5}
-              className="w-full"
-              disabled={!selectedStation}
-            />
-            <p className="text-xs text-slate-500 mt-2">계약전력 대비 사용 한도를 설정합니다</p>
-          </div>
-
-          {/* Control Buttons */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleManualCharge}
-              disabled={!selectedStation || aiEnabled}
-            >
-              <PlayCircle className="w-4 h-4" />
-              ESS 충전
-            </Button>
-
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={handleManualDischarge}
-              disabled={!selectedStation || aiEnabled}
-            >
-              <Power className="w-4 h-4" />
-              ESS 방전
-            </Button>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="gap-2 text-amber-600 border-amber-600"
-                  disabled={!selectedStation}
-                >
-                  <PauseCircle className="w-4 h-4" />
-                  일시 정지
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>충전소 일시 정지</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    선택한 충전소의 모든 충전 작업을 일시 정지합니다. 계속하시겠습니까?
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => toast.warning("일시 정지 실행")}>
-                    확인
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="gap-2"
-                  disabled={!selectedStation}
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                  긴급 정지
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>긴급 정지</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    선택한 충전소를 즉시 긴급 정지합니다. 이 작업은 즉시 실행되며 되돌릴 수
-                    없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => selectedStation && handleEmergencyStop(selectedStation)}
-                    className="bg-red-600"
-                  >
-                    긴급 정지 실행
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-
-          {aiEnabled && (
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-900">
-                <strong>알림:</strong> AI 자동 제어가 활성화되어 있습니다. 수동 제어를
-                사용하려면 AI 자동 제어를 비활성화해주세요.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Station Control Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>충전소별 제어 패널</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>충전소</TableHead>
-                <TableHead>상태</TableHead>
-                <TableHead>ESS 잔량</TableHead>
-                <TableHead>현재 전력</TableHead>
-                <TableHead className="text-right">제어</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stations?.map((station) => (
-                <TableRow key={station.id}>
-                  <TableCell className="font-medium">{station.name}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        station.status === "active"
-                          ? "text-green-600 border-green-600"
-                          : station.status === "warning"
-                          ? "text-amber-600 border-amber-600"
-                          : "text-red-600 border-red-600"
-                      }
-                    >
-                      {station.status === "active"
-                        ? "정상"
-                        : station.status === "warning"
-                        ? "경고"
-                        : "오류"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-slate-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${station.batteryLevel}%` }}
-                        />
-                      </div>
-                      <span className="text-sm">{station.batteryLevel.toFixed(0)}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{station.gridConsumption.toFixed(1)} kW</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleRestart(station.id)}
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="destructive">
-                          <Power className="w-3 h-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{station.name} 긴급 정지</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            이 충전소를 긴급 정지하시겠습니까?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>취소</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleEmergencyStop(station.id)}
-                            className="bg-red-600"
-                          >
-                            정지
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
   );
 }
