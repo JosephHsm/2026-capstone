@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -18,8 +19,8 @@ import {
 import {
   generateWeatherData,
   generateHourlyPowerData,
-  mockStations,
 } from "../services/mockData";
+import { fetchLatestTelemetry, mqttToStation, subscribeToTelemetry, ChargingStation } from "../services/api";
 import { Sun, Cloud, Droplets, Thermometer, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 // Generate solar forecast data
@@ -41,6 +42,19 @@ const generateEnergyMix = () => {
 };
 
 export function EnergyMonitoring() {
+  const [stations, setStations] = useState<ChargingStation[]>([]);
+
+  useEffect(() => {
+    fetchLatestTelemetry().then(data => {
+      if (data?.stations) setStations(data.stations.map(mqttToStation));
+    }).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToTelemetry(setStations);
+    return unsubscribe;
+  }, []);
+
   const { data: weather } = useQuery({
     queryKey: ["weather"],
     queryFn: () => Promise.resolve(generateWeatherData()),
@@ -61,13 +75,8 @@ export function EnergyMonitoring() {
     queryFn: () => Promise.resolve(generateEnergyMix()),
   });
 
-  const { data: stations } = useQuery({
-    queryKey: ["stations"],
-    queryFn: () => Promise.resolve(mockStations),
-  });
-
-  const totalSolarGen = stations?.reduce((sum, s) => sum + s.solarGeneration, 0) || 0;
-  const totalGridConsumption = stations?.reduce((sum, s) => sum + s.gridConsumption, 0) || 0;
+  const totalSolarGen = stations.reduce((sum, s) => sum + s.solarGeneration, 0);
+  const totalGridConsumption = stations.reduce((sum, s) => sum + s.gridConsumption, 0);
 
   return (
       <div className="space-y-6">

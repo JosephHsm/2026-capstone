@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sun, Cloud, Droplets, Thermometer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -12,17 +13,32 @@ import {
   Legend,
 } from "recharts";
 import {
-  mockStations,
   generateWeatherData,
   generateAIMetrics,
   generateHourlyPowerData,
 } from "../services/mockData";
+import {
+  fetchLatestTelemetry,
+  mqttToStation,
+  subscribeToTelemetry,
+  ChargingStation,
+} from "../services/api";
 
 export function Dashboard() {
-  const { data: stations } = useQuery({
-    queryKey: ["stations"],
-    queryFn: () => Promise.resolve(mockStations),
-  });
+  const [stations, setStations] = useState<ChargingStation[]>([]);
+
+  // 초기 데이터 로드 (SSE 연결 전 스냅샷)
+  useEffect(() => {
+    fetchLatestTelemetry().then(data => {
+      if (data?.stations) setStations(data.stations.map(mqttToStation));
+    }).catch(console.error);
+  }, []);
+
+  // SSE 실시간 구독
+  useEffect(() => {
+    const unsubscribe = subscribeToTelemetry(setStations);
+    return unsubscribe;
+  }, []);
 
   const { data: weather } = useQuery({
     queryKey: ["weather"],
@@ -212,7 +228,7 @@ export function Dashboard() {
                 </tr>
                 </thead>
                 <tbody>
-                {stations?.map((station) => (
+                {stations.map((station) => (
                     <tr key={station.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                       <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-100">{station.name}</td>
                       <td className="py-3 px-4">
