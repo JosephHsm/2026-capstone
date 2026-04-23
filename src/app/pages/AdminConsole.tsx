@@ -80,8 +80,8 @@ export function AdminConsole() {
   return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">관리자 콘솔</h1>
-          <p className="text-slate-600 mt-1">시스템 제어 및 수동 조작 패널</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">관리자 콘솔</h1>
+          <p className="text-slate-600 dark:text-slate-300 mt-1">시스템 제어 및 수동 조작 패널</p>
         </div>
 
         {/* System Status */}
@@ -101,7 +101,7 @@ export function AdminConsole() {
                   ONLINE
                 </Badge>
               </div>
-              <p className="text-xs text-slate-600 mt-2">가동 시간: 72일 15시간</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">가동 시간: 72일 15시간</p>
             </CardContent>
           </Card>
 
@@ -119,7 +119,7 @@ export function AdminConsole() {
               </span>
                 <Switch checked={aiEnabled} onCheckedChange={handleToggleAI} />
               </div>
-              <p className="text-xs text-slate-600 mt-2">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">
                 {aiEnabled ? "AI가 자동으로 최적화 중" : "수동 제어 모드"}
               </p>
             </CardContent>
@@ -139,7 +139,7 @@ export function AdminConsole() {
                   경고
                 </Badge>
               </div>
-              <p className="text-xs text-slate-600 mt-2">잠실: 높은 사용률, 판교: 낮은 ESS</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-2">잠실: 높은 사용률, 판교: 낮은 ESS</p>
             </CardContent>
           </Card>
         </div>
@@ -148,7 +148,7 @@ export function AdminConsole() {
         <Card>
           <CardHeader>
             <CardTitle>AI 제어 명령 이력</CardTitle>
-            <p className="text-sm text-slate-600">최근 AI가 실행한 제어 명령</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">최근 AI가 실행한 제어 명령</p>
           </CardHeader>
           <CardContent>
             <Table>
@@ -186,7 +186,7 @@ export function AdminConsole() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>수동 제어 패널</CardTitle>
-                <p className="text-sm text-slate-600 mt-1">비상 시 직접 제어 기능</p>
+                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">비상 시 직접 제어 기능</p>
               </div>
               {!aiEnabled && (
                   <Badge variant="default" className="bg-blue-600">

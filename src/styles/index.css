@@ -1,3 +1,20 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@layer base {
+    /* 다크모드일 때 모든 제목 태그의 기본 색상을 밝게 설정 */
+    .dark h1, .dark h2, .dark h3, .dark h4 {
+        color: theme('colors.slate.100');
+    }
+
+    /* 본문 텍스트도 다크모드에서 가독성 높게 조정 */
+    .dark p, .dark span, .dark label {
+        color: theme('colors.slate.400');
+    }
+
+    /* 강한 강조 텍스트 */
+    .dark .font-bold {
+        color: theme('colors.white');
+    }
+}

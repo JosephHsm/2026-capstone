@@ -42,8 +42,8 @@ export function Dashboard() {
   return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">통합 관제 대시보드</h1>
-          <p className="text-slate-600 mt-1">AI 예측 모델 기반 실시간 모니터링</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">통합 관제 대시보드</h1>
+          <p className="text-slate-600 dark:text-slate-300 mt-1">AI 예측 모델 기반 실시간 모니터링</p>
         </div>
 
         {/* Weather & AI Metrics - 상단 배치 및 UI 개선 */}
@@ -51,7 +51,7 @@ export function Dashboard() {
           {/* 기상 정보 위젯 */}
           <Card className="bg-gradient-to-br from-slate-50 to-blue-50/30 border-slate-200">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg text-slate-800">실시간 기상 현황</CardTitle>
+              <CardTitle className="text-lg text-slate-800 dark:text-slate-100">실시간 기상 현황</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
@@ -60,8 +60,8 @@ export function Dashboard() {
                     <Thermometer className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">기온</p>
-                    <p className="text-xl font-bold text-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">기온</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
                       {weather?.temperature.toFixed(1)}°C
                     </p>
                   </div>
@@ -71,19 +71,19 @@ export function Dashboard() {
                     <Droplets className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">습도</p>
-                    <p className="text-xl font-bold text-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">습도</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
                       {weather?.humidity.toFixed(0)}%
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                  <div className="p-2.5 bg-slate-100 rounded-lg text-slate-500">
+                  <div className="p-2.5 bg-slate-100 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-400">
                     <Cloud className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">운량</p>
-                    <p className="text-xl font-bold text-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">운량</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
                       {weather?.cloudCover.toFixed(0)}%
                     </p>
                   </div>
@@ -93,8 +93,8 @@ export function Dashboard() {
                     <Sun className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">일사량</p>
-                    <p className="text-xl font-bold text-slate-800">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">일사량</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">
                       {weather?.solarRadiation.toFixed(0)} <span className="text-sm font-normal">W/m²</span>
                     </p>
                   </div>
@@ -112,7 +112,7 @@ export function Dashboard() {
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm font-medium text-slate-600">누적 비용 절감액</span>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">누적 비용 절감액</span>
                     <span className="text-2xl font-bold text-green-600">
                     ₩{aiMetrics?.costSavings.toLocaleString()}
                   </span>
@@ -123,7 +123,7 @@ export function Dashboard() {
                 </div>
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm font-medium text-slate-600">AI 모델 보상 점수</span>
+                    <span className="text-sm font-medium text-slate-600 dark:text-slate-300">AI 모델 보상 점수</span>
                     <span className="text-2xl font-bold text-blue-600">
                     {(aiMetrics?.rewardScore || 0).toFixed(3)}
                   </span>
@@ -144,7 +144,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>향후 24시간 수요 및 발전 예측 (AI 기반)</CardTitle>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
               현재 시간부터 24시간 동안의 예상 전력 수요와 예상 태양광 발전량을 실시간으로 예측합니다. (실제 소비 제외)
             </p>
           </CardHeader>
@@ -204,17 +204,17 @@ export function Dashboard() {
               <table className="w-full text-sm">
                 <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600">충전소명</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-600">상태</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">충전 차량</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">ESS 잔량</th>
-                  <th className="text-right py-3 px-4 font-semibold text-slate-600">현재 발전량</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">충전소명</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">상태</th>
+                  <th className="text-right py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">충전 차량</th>
+                  <th className="text-right py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">ESS 잔량</th>
+                  <th className="text-right py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">현재 발전량</th>
                 </tr>
                 </thead>
                 <tbody>
                 {stations?.map((station) => (
                     <tr key={station.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-slate-800">{station.name}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800 dark:text-slate-100">{station.name}</td>
                       <td className="py-3 px-4">
                       <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -224,7 +224,7 @@ export function Dashboard() {
                                       ? "bg-amber-100 text-amber-700"
                                       : station.status === "error"
                                           ? "bg-red-100 text-red-700"
-                                          : "bg-slate-100 text-slate-700"
+                                          : "bg-slate-100 text-slate-700 dark:text-slate-200"
                           }`}
                       >
                         {station.status === "active"

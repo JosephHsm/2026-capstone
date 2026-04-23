@@ -76,15 +76,15 @@ export function AIOptimization() {
   return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">AI 강화학습 최적화</h1>
-          <p className="text-slate-600 mt-1">강화학습 모델 기반 전력 스케줄링 및 운영 성과 분석</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">AI 강화학습 최적화</h1>
+          <p className="text-slate-600 dark:text-slate-300 mt-1">강화학습 모델 기반 전력 스케줄링 및 운영 성과 분석</p>
         </div>
 
         {/* Scheduling Timeline */}
         <Card>
           <CardHeader>
             <CardTitle>24시간 충·방전 및 전력 융통 스케줄</CardTitle>
-            <p className="text-sm text-slate-600 mt-1">AI 모델이 예측한 오늘 하루의 최적 제어 타임라인</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">AI 모델이 예측한 오늘 하루의 최적 제어 타임라인</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
@@ -132,19 +132,19 @@ export function AIOptimization() {
             {/* Schedule Details (수요 반응 제거됨) */}
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <div className="text-sm font-medium text-slate-600">야간 스케줄링</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">야간 스케줄링</div>
                 <div className="text-xl font-bold text-blue-600 my-1">22:00 - 06:00</div>
-                <div className="text-xs text-slate-500">저렴한 심야 전력 활용하여 ESS 충전</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">저렴한 심야 전력 활용하여 ESS 충전</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
-                <div className="text-sm font-medium text-slate-600">피크타임 대응</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">피크타임 대응</div>
                 <div className="text-xl font-bold text-green-600 my-1">10:00 - 16:00</div>
-                <div className="text-xs text-slate-500">ESS 방전 및 타 충전소 잉여전력 수급</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">ESS 방전 및 타 충전소 잉여전력 수급</div>
               </div>
               <div className="text-center p-4 bg-orange-50 rounded-xl border border-orange-100">
-                <div className="text-sm font-medium text-slate-600">재생에너지 활용</div>
+                <div className="text-sm font-medium text-slate-600 dark:text-slate-300">재생에너지 활용</div>
                 <div className="text-xl font-bold text-orange-600 my-1">09:00 - 17:00</div>
-                <div className="text-xs text-slate-500">태양광 발전량 우선 사용 및 잉여분 저장</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">태양광 발전량 우선 사용 및 잉여분 저장</div>
               </div>
             </div>
           </CardContent>
@@ -155,7 +155,7 @@ export function AIOptimization() {
           <Card>
             <CardHeader>
               <CardTitle>최근 30일 누적 비용 절감 추이</CardTitle>
-              <p className="text-sm text-slate-500">AI 도입으로 인한 누적 전기요금 절감 효과</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">AI 도입으로 인한 누적 전기요금 절감 효과</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -193,7 +193,7 @@ export function AIOptimization() {
           <Card>
             <CardHeader>
               <CardTitle>AI 실시간 의사결정 분포</CardTitle>
-              <p className="text-sm text-slate-500">강화학습 에이전트의 제어 명령 비율 (최근 24시간)</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">강화학습 에이전트의 제어 명령 비율 (최근 24시간)</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -229,7 +229,7 @@ export function AIOptimization() {
                 <BatteryCharging className="w-5 h-5 text-indigo-600" />
                 ESS 배터리 수명(SoH) 최적화 비교
               </CardTitle>
-              <p className="text-sm text-slate-500">충·방전 깊이(DoD) 제어에 따른 배터리 건강도 예측</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">충·방전 깊이(DoD) 제어에 따른 배터리 건강도 예측</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -265,33 +265,33 @@ export function AIOptimization() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-slate-800" />
+                <Brain className="w-5 h-5 text-slate-800 dark:text-slate-100" />
                 강화학습 모델 아키텍처
               </CardTitle>
-              <p className="text-sm text-slate-500">다중 충전소 관제에 적용된 하이퍼파라미터 및 구조</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">다중 충전소 관제에 적용된 하이퍼파라미터 및 구조</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-2 text-sm flex items-center gap-1.5">
                       <Brain className="w-4 h-4 text-blue-600" /> 알고리즘
                     </h4>
                     <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-500">종류</span><span className="font-medium">Multi-Agent PPO</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">레이어</span><span className="font-medium">Actor-Critic 4층</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">옵티마이저</span><span className="font-medium">AdamW</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">종류</span><span className="font-medium">Multi-Agent PPO</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">레이어</span><span className="font-medium">Actor-Critic 4층</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">옵티마이저</span><span className="font-medium">AdamW</span></div>
                     </div>
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <h4 className="font-semibold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                    <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-2 text-sm flex items-center gap-1.5">
                       <TrendingDown className="w-4 h-4 text-purple-600" /> 학습 설정
                     </h4>
                     <div className="space-y-1.5 text-sm">
-                      <div className="flex justify-between"><span className="text-slate-500">학습률</span><span className="font-medium">3e-4</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">할인율(γ)</span><span className="font-medium">0.99</span></div>
-                      <div className="flex justify-between"><span className="text-slate-500">배치크기</span><span className="font-medium">2048</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">학습률</span><span className="font-medium">3e-4</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">할인율(γ)</span><span className="font-medium">0.99</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400 ">배치크기</span><span className="font-medium">2048</span></div>
                     </div>
                   </div>
                 </div>

@@ -95,7 +95,7 @@
 //       <div className="flex items-center justify-between">
 //         <div>
 //           <h1 className="text-3xl font-bold text-slate-900">통계 및 리포트</h1>
-//           <p className="text-slate-600 mt-1">전력 사용 분석 및 비용 정산 현황</p>
+//           <p className="text-slate-600 dark:text-slate-300 mt-1">전력 사용 분석 및 비용 정산 현황</p>
 //         </div>
 //         <Button className="gap-2">
 //           <Download className="w-4 h-4" />
@@ -143,7 +143,7 @@
 //           </CardHeader>
 //           <CardContent>
 //             <div className="text-2xl font-bold text-green-600">₩{totalSavings.toLocaleString()}</div>
-//             <p className="text-xs text-slate-600 mt-1">6개월 누적</p>
+//             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">6개월 누적</p>
 //           </CardContent>
 //         </Card>
 //
@@ -156,7 +156,7 @@
 //           </CardHeader>
 //           <CardContent>
 //             <div className="text-2xl font-bold text-blue-600">{avgSavingsRate.toFixed(1)}%</div>
-//             <p className="text-xs text-slate-600 mt-1">AI 도입 효과</p>
+//             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">AI 도입 효과</p>
 //           </CardContent>
 //         </Card>
 //
@@ -169,7 +169,7 @@
 //           </CardHeader>
 //           <CardContent>
 //             <div className="text-2xl font-bold">48,523 kWh</div>
-//             <p className="text-xs text-slate-600 mt-1">전월 대비 -8.2%</p>
+//             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">전월 대비 -8.2%</p>
 //           </CardContent>
 //         </Card>
 //
@@ -182,7 +182,7 @@
 //           </CardHeader>
 //           <CardContent>
 //             <div className="text-2xl font-bold">₩14,000,000</div>
-//             <p className="text-xs text-slate-600 mt-1">전월 대비 -12.5%</p>
+//             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">전월 대비 -12.5%</p>
 //           </CardContent>
 //         </Card>
 //       </div>
@@ -200,7 +200,7 @@
 //           <Card>
 //             <CardHeader>
 //               <CardTitle>AI 도입 전/후 비용 비교</CardTitle>
-//               <p className="text-sm text-slate-600">월별 전력 비용 절감 효과</p>
+//               <p className="text-sm text-slate-600 dark:text-slate-300">월별 전력 비용 절감 효과</p>
 //             </CardHeader>
 //             <CardContent>
 //               <ResponsiveContainer width="100%" height={350}>
@@ -220,11 +220,11 @@
 //               <div className="mt-6 grid grid-cols-3 gap-4">
 //                 {costComparison?.slice(0, 3).map((item, index) => (
 //                   <div key={index} className="text-center p-4 bg-slate-50 rounded-lg">
-//                     <div className="text-sm text-slate-600 mb-1">{item.period}</div>
+//                     <div className="text-sm text-slate-600 dark:text-slate-300 mb-1">{item.period}</div>
 //                     <div className="text-xl font-bold text-green-600">
 //                       ₩{(item.beforeAI - item.afterAI).toLocaleString()}
 //                     </div>
-//                     <div className="text-xs text-slate-500">
+//                     <div className="text-xs text-slate-500 dark:text-slate-400">
 //                       {(((item.beforeAI - item.afterAI) / item.beforeAI) * 100).toFixed(1)}% 절감
 //                     </div>
 //                   </div>
@@ -400,7 +400,7 @@
 //               </CardHeader>
 //               <CardContent>
 //                 <div className="text-3xl font-bold text-green-600">32.5%</div>
-//                 <p className="text-sm text-slate-600 mt-2">전체 에너지 중 태양광 비율</p>
+//                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">전체 에너지 중 태양광 비율</p>
 //                 <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
 //                   <div className="bg-green-500 h-3 rounded-full" style={{ width: "32.5%" }} />
 //                 </div>
@@ -413,7 +413,7 @@
 //               </CardHeader>
 //               <CardContent>
 //                 <div className="text-3xl font-bold text-blue-600">78.3%</div>
-//                 <p className="text-sm text-slate-600 mt-2">배터리 충방전 효율</p>
+//                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">배터리 충방전 효율</p>
 //                 <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
 //                   <div className="bg-blue-500 h-3 rounded-full" style={{ width: "78.3%" }} />
 //                 </div>
@@ -426,7 +426,7 @@
 //               </CardHeader>
 //               <CardContent>
 //                 <div className="text-3xl font-bold text-purple-600">91.2%</div>
-//                 <p className="text-sm text-slate-600 mt-2">피크 시간대 전력 절감</p>
+//                 <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">피크 시간대 전력 절감</p>
 //                 <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
 //                   <div className="bg-purple-500 h-3 rounded-full" style={{ width: "91.2%" }} />
 //                 </div>
@@ -516,8 +516,8 @@ export function Statistics() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">통계 및 리포트</h1>
-            <p className="text-slate-600 mt-1">전력 사용 분석 및 비용 정산 현황</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">통계 및 리포트</h1>
+            <p className="text-slate-600 dark:text-slate-300 mt-1">전력 사용 분석 및 비용 정산 현황</p>
           </div>
           <Button className="gap-2">
             <Download className="w-4 h-4" />
@@ -565,7 +565,7 @@ export function Statistics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">48,523 kWh</div>
-              <p className="text-xs text-slate-600 mt-1">전월 대비 -8.2%</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">전월 대비 -8.2%</p>
             </CardContent>
           </Card>
 
@@ -578,7 +578,7 @@ export function Statistics() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₩14,000,000</div>
-              <p className="text-xs text-slate-600 mt-1">전월 대비 -12.5%</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">전월 대비 -12.5%</p>
             </CardContent>
           </Card>
         </div>
@@ -759,7 +759,7 @@ export function Statistics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">32.5%</div>
-                  <p className="text-sm text-slate-600 mt-2">전체 에너지 중 태양광 비율</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">전체 에너지 중 태양광 비율</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div className="bg-green-500 h-3 rounded-full" style={{ width: "32.5%" }} />
                   </div>
@@ -772,7 +772,7 @@ export function Statistics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">78.3%</div>
-                  <p className="text-sm text-slate-600 mt-2">배터리 충방전 효율</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">배터리 충방전 효율</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div className="bg-blue-500 h-3 rounded-full" style={{ width: "78.3%" }} />
                   </div>
@@ -785,7 +785,7 @@ export function Statistics() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-purple-600">91.2%</div>
-                  <p className="text-sm text-slate-600 mt-2">피크 시간대 전력 절감</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">피크 시간대 전력 절감</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div className="bg-purple-500 h-3 rounded-full" style={{ width: "91.2%" }} />
                   </div>

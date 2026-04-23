@@ -72,8 +72,8 @@ export function EnergyMonitoring() {
   return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">신재생 에너지 모니터링</h1>
-          <p className="text-slate-600 mt-1">태양광 발전 현황 및 기상 데이터 실시간 분석</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">신재생 에너지 모니터링</h1>
+          <p className="text-slate-600 dark:text-slate-300 mt-1">태양광 발전 현황 및 기상 데이터 실시간 분석</p>
         </div>
 
         {/* Weather Information */}
@@ -85,7 +85,7 @@ export function EnergyMonitoring() {
                   <Thermometer className="w-6 h-6 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">기온</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">기온</p>
                   <p className="text-2xl font-bold">{weather?.temperature.toFixed(1)}°C</p>
                 </div>
               </div>
@@ -99,7 +99,7 @@ export function EnergyMonitoring() {
                   <Droplets className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">습도</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">습도</p>
                   <p className="text-2xl font-bold">{weather?.humidity.toFixed(0)}%</p>
                 </div>
               </div>
@@ -110,10 +110,10 @@ export function EnergyMonitoring() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-slate-100 rounded-lg">
-                  <Cloud className="w-6 h-6 text-slate-600" />
+                  <Cloud className="w-6 h-6 text-slate-600 dark:text-slate-300" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">운량</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">운량</p>
                   <p className="text-2xl font-bold">{weather?.cloudCover.toFixed(0)}%</p>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export function EnergyMonitoring() {
                   <Sun className="w-6 h-6 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600">일사량</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">일사량</p>
                   <p className="text-xl font-bold">{weather?.solarRadiation.toFixed(0)} W/m²</p>
                 </div>
               </div>
@@ -151,11 +151,11 @@ export function EnergyMonitoring() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-orange-600">{totalSolarGen.toFixed(1)} kW</div>
-                  <p className="text-sm text-slate-600 mt-1">전체 충전소 합계</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">전체 충전소 합계</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div className="bg-orange-500 h-3 rounded-full" style={{ width: "68%" }} />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">설비용량 대비 68%</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">설비용량 대비 68%</p>
                 </CardContent>
               </Card>
 
@@ -165,11 +165,11 @@ export function EnergyMonitoring() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-blue-600">{totalGridConsumption.toFixed(1)} kW</div>
-                  <p className="text-sm text-slate-600 mt-1">현재 사용 중</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">현재 사용 중</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div className="bg-blue-500 h-3 rounded-full" style={{ width: "82%" }} />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">계약전력 대비 82%</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">계약전력 대비 82%</p>
                 </CardContent>
               </Card>
 
@@ -181,7 +181,7 @@ export function EnergyMonitoring() {
                   <div className="text-3xl font-bold text-green-600">
                     {((totalSolarGen / (totalSolarGen + totalGridConsumption)) * 100).toFixed(1)}%
                   </div>
-                  <p className="text-sm text-slate-600 mt-1">전체 에너지 대비</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">전체 에너지 대비</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
                     <div
                         className="bg-green-500 h-3 rounded-full"
@@ -190,7 +190,7 @@ export function EnergyMonitoring() {
                         }}
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">현재 비율</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">현재 비율</p>
                 </CardContent>
               </Card>
             </div>
@@ -321,7 +321,7 @@ export function EnergyMonitoring() {
                     <CardHeader className="pb-4">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">{station.name} 개별 태양광 패널 현황</CardTitle>
-                        <span className="text-sm font-medium text-slate-500">
+                        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
                       총 {panels.length}개 패널
                     </span>
                       </div>
@@ -340,7 +340,7 @@ export function EnergyMonitoring() {
                                 }`}
                             >
                               <div className="flex justify-between items-start mb-3">
-                                <span className="font-medium text-sm text-slate-700">{panel.name}</span>
+                                <span className="font-medium text-sm text-slate-700 dark:text-slate-200">{panel.name}</span>
                                 {panel.status === 'active' && (
                                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                                 )}
@@ -354,15 +354,15 @@ export function EnergyMonitoring() {
                               <div className="mt-1">
                                 {panel.status === 'active' ? (
                                     <div className="flex items-baseline gap-1">
-                              <span className="text-2xl font-bold text-slate-800">
+                              <span className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                                 {panel.generation.toFixed(1)}
                               </span>
-                                      <span className="text-xs font-medium text-slate-500">kW</span>
+                                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">kW</span>
                                     </div>
                                 ) : (
                                     <span
                                         className={`text-sm font-bold ${
-                                            panel.status === 'faulty' ? 'text-red-600' : 'text-slate-500'
+                                            panel.status === 'faulty' ? 'text-red-600' : 'text-slate-500 dark:text-slate-400'
                                         }`}
                                     >
                               {panel.status === 'faulty' ? '점검 필요 (고장)' : '오프라인'}

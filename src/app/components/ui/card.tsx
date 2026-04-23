@@ -4,14 +4,15 @@ import { cn } from "./utils";
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
-      data-slot="card"
-      className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border",
-        className,
-      )}
-      {...props}
-    />
+      <div
+          data-slot="card"
+          className={cn(
+              // 변경점: 다크모드 시 배경을 #1C1C1E 로 변경하고, 텍스트를 흰색으로, 그림자를 투명하게 처리합니다.
+              "bg-white dark:bg-[#1C1C1E] text-slate-900 dark:text-slate-100 flex flex-col gap-6 rounded-xl border-0 shadow-[0_2px_20px_rgba(0,0,0,0.04)] dark:shadow-none transition-colors duration-300",
+              className,
+          )}
+          {...props}
+      />
   );
 }
 
