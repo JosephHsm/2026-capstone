@@ -1,78 +1,228 @@
 // =====================================================================
-// [추후 백엔드 연동 시 사용할 API 서비스 코드 모음]
-// 위치: src/app/services/api.ts (새로 생성 예정)
-// 패키지 설치 필요: npm install axios
+// 백엔드 API 서비스 (Spring Boot, port 8080)
+// 로컬 개발: Vite proxy가 /api, /sse, /schedule → http://localhost:8080 으로 포워딩
 // =====================================================================
 
-/*
-import axios from 'axios';
+// ---- MQTT 백엔드 타입 (백엔드 DTO와 1:1 매핑) -------------------------
+// 주의: Jackson @JsonProperty 기준 직렬화 키명을 사용해야 함
 
-// 백엔드 서버 주소 (환경 변수로 관리하는 것을 권장합니다)
-const API_BASE_URL = 'http://localhost:8000/api';
+export interface MqttHeader {
+  station_id: number;
+  is_physical: boolean;
+  timestamp: string;
+  day_idx: number;
+  step: number;
+}
 
-// Axios 기본 인스턴스 설정
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // timeout: 5000,
-});
+export interface MqttChargerStatus {
+  charger_id: number;
+  has_demand: boolean;   // @JsonProperty("has_demand") → JSON 키는 has_demand
+}
 
-export const api = {
-  // 1. 전체 충전소 실시간 상태 목록 가져오기 (GET)
-  getStations: async () => {
-    const response = await apiClient.get('/stations');
-    return response.data; // 백엔드에서 mockStations와 동일한 타입의 배열을 반환해야 함
-  },
+export interface MqttPowerMetrics {
+  p_pv: number;
+  p_load: number;
+  p_ess: number;
+  p_grid: number;
+  p_tr: number;
+}
 
-  // 2. 실시간 기상 데이터 가져오기 (GET)
-  getWeather: async () => {
-    const response = await apiClient.get('/weather/current');
-    return response.data;
-  },
+export interface MqttStateOfCharge {
+  mode: string;
+  soc: number;
+  capacity_wh: number;
+}
 
-  // 3. AI 최적화 메트릭 가져오기 (GET)
-  getAIMetrics: async () => {
-    const response = await apiClient.get('/ai/metrics');
-    return response.data;
-  },
+export interface MqttStationPayload {
+  charger_status: MqttChargerStatus[];
+  power_metrics_w: MqttPowerMetrics;
+  state_of_charge: MqttStateOfCharge;
+}
 
-  // 4. 충전소 긴급 정지 제어 (POST - 관리자 콘솔용)
-  stopStation: async (stationId: string) => {
-    const response = await apiClient.post(`/stations/${stationId}/emergency-stop`);
-    return response.data;
-  },
+export interface MqttStationStatus {
+  is_active: boolean;    // @JsonProperty("is_active") → JSON 키는 is_active
+  error_code: number;
+}
 
-  // 5. 충전소 재시작 제어 (POST - 관리자 콘솔용)
-  restartStation: async (stationId: string) => {
-    const response = await apiClient.post(`/stations/${stationId}/restart`);
-    return response.data;
-  }
+export interface MqttStation {
+  header: MqttHeader;
+  payload: MqttStationPayload;
+  status: MqttStationStatus;
+}
+
+export interface MqttTelemetry {
+  stations: MqttStation[];
+}
+
+// ---- 프론트엔드 도메인 타입 -------------------------------------------
+
+export interface ChargingStation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  status: 'active' | 'warning' | 'error' | 'offline';
+  currentVehicles: number;
+  maxCapacity: number;
+  batteryLevel: number;   // %
+  solarGeneration: number; // kW
+  gridConsumption: number; // kW
+  essMode?: string;
+  pLoad?: number;          // kW
+  pEss?: number;           // kW
+}
+
+// 스테이션 ID → 이름/좌표 매핑 (실제 설치 위치로 교체하세요)
+const STATION_META: Record<number, { name: string; lat: number; lng: number }> = {
+  1: { name: '강남 충전소',  lat: 37.4979, lng: 127.0276 },
+  2: { name: '여의도 충전소', lat: 37.5219, lng: 126.9245 },
+  3: { name: '잠실 충전소',  lat: 37.5133, lng: 127.1028 },
+  4: { name: '홍대 충전소',  lat: 37.5563, lng: 126.9241 },
+  5: { name: '판교 충전소',  lat: 37.3943, lng: 127.1110 },
 };
 
-// =====================================================================
-// [실시간 데이터 통신을 위한 WebSocket 연결 유틸리티]
-// 충전소 데이터는 실시간으로 변하므로 HTTP GET 폴링 대신 웹소켓을 쓰면 좋습니다.
-// =====================================================================
+/** MQTT 스테이션 데이터 → 프론트엔드 ChargingStation 변환 */
+export function mqttToStation(s: MqttStation): ChargingStation {
+  const id = s.header.station_id;
+  const meta = STATION_META[id] ?? { name: `충전소 ${id}`, lat: 37.5, lng: 127.0 };
+  const chargers = s.payload?.charger_status ?? [];
+  const power = s.payload?.power_metrics_w;
+  const soc = s.payload?.state_of_charge;
 
-export const subscribeToRealtimeStations = (onUpdate: (data: any) => void) => {
-  const ws = new WebSocket('ws://localhost:8000/ws/stations');
+  const statusCode = s.status?.error_code ?? 0;
+  const isActive = s.status?.is_active ?? false;
+  const stationStatus: ChargingStation['status'] = !isActive
+    ? 'offline'
+    : statusCode > 0
+    ? 'warning'
+    : 'active';
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    onUpdate(data);
+  return {
+    id: String(id),
+    name: meta.name,
+    lat: meta.lat,
+    lng: meta.lng,
+    status: stationStatus,
+    currentVehicles: chargers.filter(c => c.has_demand).length,
+    maxCapacity: chargers.length,
+    batteryLevel: (soc?.soc ?? 0) * 100,
+    solarGeneration: (power?.p_pv ?? 0) / 1000,
+    gridConsumption: Math.max(0, power?.p_grid ?? 0) / 1000,
+    essMode: soc?.mode,
+    pLoad: (power?.p_load ?? 0) / 1000,
+    pEss: (power?.p_ess ?? 0) / 1000,
   };
+}
 
-  ws.onerror = (error) => {
-    console.error('WebSocket Error:', error);
-  };
+// ---- 스케줄 타입 -------------------------------------------------------
 
-  // 컴포넌트 언마운트 시 소켓 정리를 위한 함수 반환
-  return () => {
-    if (ws.readyState === 1) { // OPEN
-      ws.close();
+export interface HourlyPlan {
+  hour: number;
+  essMode: string;
+  essPower: number;
+  gridUsage: number;
+  pvPriority: number;
+  transfers: { targetStationId: number; power: number }[];
+}
+
+export interface StationSchedule {
+  stationId: number;
+  stationName: string;
+  hourlyPlan: HourlyPlan[];
+}
+
+export interface ScheduleResponse {
+  requestId: string;
+  targetDate: string;
+  createdAt: string;
+  status: string;
+  stations: StationSchedule[];
+}
+
+export interface ScheduleHistoryItem {
+  requestId: string;
+  targetDate: string;
+  createdAt: string;
+  status: string;
+}
+
+// ---- REST API 함수 ---------------------------------------------------
+
+/** 최신 텔레메트리 1회 조회 (SSE 연결 전 초기값용) */
+export async function fetchLatestTelemetry(): Promise<MqttTelemetry | null> {
+  const res = await fetch('/api/telemetry/latest');
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`텔레메트리 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 오늘 AI 스케줄 조회 */
+export async function fetchTodaySchedule(): Promise<ScheduleResponse | null> {
+  const res = await fetch('/api/schedule/today');
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`스케줄 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 내일 AI 스케줄 조회 */
+export async function fetchTomorrowSchedule(): Promise<ScheduleResponse | null> {
+  const res = await fetch('/api/schedule/tomorrow');
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`스케줄 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 특정 날짜 스케줄 조회 */
+export async function fetchScheduleByDate(date: string): Promise<ScheduleResponse | null> {
+  const res = await fetch(`/api/schedule/date/${date}`);
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`스케줄 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 최근 스케줄 실행 이력 조회 (최대 10건) */
+export async function fetchScheduleHistory(): Promise<ScheduleHistoryItem[]> {
+  const res = await fetch('/api/schedule/history');
+  if (!res.ok) throw new Error(`이력 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행
+ *  @returns true = 실행 성공, false = 텔레메트리 데이터 없음
+ */
+export async function triggerScheduleRunNow(): Promise<boolean> {
+  const res = await fetch('/schedule/run-now', { method: 'POST' });
+  if (res.status === 204) return false;
+  if (!res.ok) throw new Error(`스케줄 실행 실패: ${res.status}`);
+  return true;
+}
+
+// ---- SSE 실시간 구독 ---------------------------------------------------
+
+/**
+ * 백엔드 SSE 스트림 구독
+ * @param onData  텔레메트리 수신 콜백
+ * @returns       구독 해제 함수 (컴포넌트 cleanup에서 호출)
+ */
+export function subscribeToTelemetry(
+  onData: (stations: ChargingStation[]) => void
+): () => void {
+  const es = new EventSource('/sse/telemetry');
+
+  es.addEventListener('telemetry', (event: MessageEvent) => {
+    try {
+      const telemetry: MqttTelemetry = JSON.parse(event.data);
+      if (telemetry.stations) {
+        onData(telemetry.stations.map(mqttToStation));
+      }
+    } catch (e) {
+      console.error('[SSE] 파싱 오류:', e);
     }
+  });
+
+  es.onerror = (e) => {
+    console.error('[SSE] 연결 오류:', e);
   };
-};
-*/
+
+  return () => es.close();
+}

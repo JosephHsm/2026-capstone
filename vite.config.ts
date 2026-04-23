@@ -19,4 +19,22 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  server: {
+    proxy: {
+      // 로컬 개발 시 /api, /sse 요청을 Spring Boot 백엔드로 프록시
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/sse': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/schedule': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
 })

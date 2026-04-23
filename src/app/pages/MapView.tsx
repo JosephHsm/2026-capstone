@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Map, MapMarker, CustomOverlayMap } from "react-kakao-maps-sdk";
-import { mockStations } from "../services/mockData";
+import { fetchLatestTelemetry, mqttToStation, subscribeToTelemetry, ChargingStation } from "../services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -11,21 +11,33 @@ import {
 } from "lucide-react";
 
 export function MapView() {
+    const [stations, setStations] = useState<ChargingStation[]>([]);
     // 선택된 마커 ID, 지도 중심 좌표, 그리고 세부정보 패널 열림 상태 관리
     const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
     const [mapCenter, setMapCenter] = useState({ lat: 37.5326, lng: 126.9900 });
     const [showDetail, setShowDetail] = useState(false);
 
+    useEffect(() => {
+        fetchLatestTelemetry().then(data => {
+            if (data?.stations) setStations(data.stations.map(mqttToStation));
+        }).catch(console.error);
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = subscribeToTelemetry(setStations);
+        return unsubscribe;
+    }, []);
+
     // 요약 통계 계산
-    const totalStations = mockStations.length;
-    const activeStations = mockStations.filter(s => s.status === 'active').length;
-    const warningStations = mockStations.filter(s => s.status !== 'active').length;
+    const totalStations = stations.length;
+    const activeStations = stations.filter(s => s.status === 'active').length;
+    const warningStations = stations.filter(s => s.status !== 'active').length;
 
     // 선택된 충전소 객체 찾기
-    const selectedStation = mockStations.find(s => s.id === selectedStationId);
+    const selectedStation = stations.find(s => s.id === selectedStationId);
 
     // 리스트나 마커 클릭 시 해당 위치로 지도 이동 및 오버레이 띄우기
-    const handleStationClick = (station: typeof mockStations[0]) => {
+    const handleStationClick = (station: ChargingStation) => {
         setSelectedStationId(station.id);
         setMapCenter({ lat: station.lat, lng: station.lng });
         setShowDetail(false); // 다른 마커 클릭 시 세부정보 창은 일단 닫음
@@ -45,7 +57,7 @@ export function MapView() {
                         setShowDetail(false);
                     }}
                 >
-                    {mockStations.map((station) => (
+                    {stations.map((station) => (
                         <div key={station.id}>
                             <MapMarker
                                 position={{ lat: station.lat, lng: station.lng }}
@@ -135,7 +147,7 @@ export function MapView() {
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="flex flex-col">
-                            {mockStations.map((station) => (
+                            {stations.map((station) => (
                                 <button
                                     key={station.id}
                                     onClick={() => handleStationClick(station)}
