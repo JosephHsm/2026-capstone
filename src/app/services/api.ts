@@ -112,18 +112,6 @@ export function mqttToStation(s: MqttStation): ChargingStation {
     pLoad: (power?.p_load ?? 0) / 1000,
     pEss: (power?.p_ess ?? 0) / 1000,
   };
-}
-
-// ---- 스케줄 타입 -------------------------------------------------------
-
-export interface HourlyPlan {
-  hour: number;
-  essMode: string;
-  essPower: number;
-  gridUsage: number;
-  pvPriority: number;
-  transfers: { targetStationId: number; power: number }[];
-}
 
 export interface StationSchedule {
   stationId: number;
