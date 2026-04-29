@@ -84,7 +84,7 @@ const STATION_META: Record<number, { name: string; lat: number; lng: number }> =
 /** MQTT 스테이션 데이터 → 프론트엔드 ChargingStation 변환 */
 export function mqttToStation(s: MqttStation): ChargingStation {
   const id = s.header.station_id;
-  const meta = STATION_META[id] ?? { name: `충전소 ${id}`, lat: 37.5, lng: 127.0 };
+  const meta = STATION_META[id] ?? {name: `충전소 ${id}`, lat: 37.5, lng: 127.0};
   const chargers = s.payload?.charger_status ?? [];
   const power = s.payload?.power_metrics_w;
   const soc = s.payload?.state_of_charge;
@@ -92,10 +92,10 @@ export function mqttToStation(s: MqttStation): ChargingStation {
   const statusCode = s.status?.error_code ?? 0;
   const isActive = s.status?.is_active ?? false;
   const stationStatus: ChargingStation['status'] = !isActive
-    ? 'offline'
-    : statusCode > 0
-    ? 'warning'
-    : 'active';
+      ? 'offline'
+      : statusCode > 0
+          ? 'warning'
+          : 'active';
 
   return {
     id: String(id),
@@ -112,7 +112,7 @@ export function mqttToStation(s: MqttStation): ChargingStation {
     pLoad: (power?.p_load ?? 0) / 1000,
     pEss: (power?.p_ess ?? 0) / 1000,
   };
-
+}
 export interface StationSchedule {
   stationId: number;
   stationName: string;
