@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Zap, Sun, BatteryCharging, Activity, CalendarCheck, Loader2, Thermometer, Droplets, Wind, Cloud, CloudRain, Snowflake } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { fetchCurrentWeather, skyToLabel, precipToLabel } from "../services/weatherApi";
+import { fetchCurrentWeather, fetchWeatherForecast, skyToLabel, precipToLabel, ForecastHour } from "../services/weatherApi";
 import {
   AreaChart,
   Area,
@@ -21,6 +21,15 @@ import {
   ChargingStation,
   ScheduleResponse,
 } from "../services/api";
+
+function SkyIcon({ sky, pty }: { sky: number; pty: number }) {
+  if (pty === 1 || pty === 4) return <CloudRain className="w-5 h-5 text-blue-400" />;
+  if (pty === 3) return <Snowflake className="w-5 h-5 text-blue-200" />;
+  if (pty === 2) return <CloudRain className="w-5 h-5 text-slate-400" />;
+  if (sky === 1) return <Sun className="w-5 h-5 text-yellow-400" />;
+  if (sky === 3) return <Cloud className="w-5 h-5 text-slate-400" />;
+  return <Cloud className="w-5 h-5 text-slate-500" />;
+}
 
 function scheduleToHourlyData(schedule: ScheduleResponse) {
   return Array.from({ length: 24 }, (_, hour) => {
@@ -66,6 +75,13 @@ export function Dashboard() {
     retry: false,
   });
 
+  const { data: forecast = [] } = useQuery({
+    queryKey: ["weather-forecast"],
+    queryFn: fetchWeatherForecast,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
+  });
+
   const totalSolar = stations.reduce((sum, s) => sum + s.solarGeneration, 0);
   const totalGrid = stations.reduce((sum, s) => sum + s.gridConsumption, 0);
   const avgBattery = stations.length > 0
@@ -82,42 +98,15 @@ export function Dashboard() {
           <p className="text-slate-600 dark:text-slate-300 mt-1">AI 예측 모델 기반 실시간 모니터링</p>
         </div>
 
-        {/* 실시간 기상 현황 (기상청 초단기실황) */}
-        {weather && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-sky-50/60 border border-sky-100 rounded-xl text-sm text-slate-700">
-            <span className="font-semibold text-sky-700 flex items-center gap-1">
-              {weather.precipType === 1 || weather.precipType === 4 ? <CloudRain className="w-4 h-4" /> :
-               weather.precipType === 3 ? <Snowflake className="w-4 h-4" /> :
-               weather.skyCondition === 4 ? <Cloud className="w-4 h-4" /> :
-               <Sun className="w-4 h-4 text-yellow-400" />}
-              {weather.precipType > 0 ? precipToLabel(weather.precipType) : skyToLabel(weather.skyCondition)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Thermometer className="w-4 h-4 text-red-400" />
-              {weather.temperature.toFixed(1)}°C
-            </span>
-            <span className="flex items-center gap-1">
-              <Droplets className="w-4 h-4 text-blue-400" />
-              습도 {weather.humidity.toFixed(0)}%
-            </span>
-            <span className="flex items-center gap-1">
-              <Wind className="w-4 h-4 text-slate-400" />
-              풍속 {weather.windSpeed.toFixed(1)} m/s
-            </span>
-            <span className="ml-auto text-xs text-slate-400">
-              기준: {weather.observedAt} (기상청 초단기실황)
-            </span>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* 클러스터 실시간 현황 (SSE 집계) */}
+          {/* 클러스터 실시간 현황 + 기상 정보 */}
           <Card className="bg-gradient-to-br from-slate-50 to-blue-50/30 border-slate-200">
             <CardHeader className="pb-4">
               <CardTitle className="text-lg text-slate-800 dark:text-slate-100">클러스터 실시간 현황</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="space-y-5">
+              {/* 클러스터 통계 */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                   <div className="p-2.5 bg-yellow-50 rounded-lg text-yellow-500">
                     <Sun className="w-5 h-5" />
@@ -162,6 +151,64 @@ export function Dashboard() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* 구분선 + 기상 현황 */}
+              <div className="border-t border-slate-200 pt-4 space-y-3">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">실시간 기상 현황</p>
+
+                {/* 현재 날씨 */}
+                {weather ? (
+                  <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <SkyIcon sky={weather.skyCondition} pty={weather.precipType} />
+                      <div>
+                        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">
+                          {weather.temperature.toFixed(1)}<span className="text-base font-normal">°C</span>
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {weather.precipType > 0 ? precipToLabel(weather.precipType) : skyToLabel(weather.skyCondition)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <p className="text-sm text-slate-600 flex items-center justify-end gap-1">
+                        <Droplets className="w-3.5 h-3.5 text-blue-400" />
+                        습도 {weather.humidity.toFixed(0)}%
+                      </p>
+                      <p className="text-sm text-slate-600 flex items-center justify-end gap-1">
+                        <Wind className="w-3.5 h-3.5 text-slate-400" />
+                        {weather.windSpeed.toFixed(1)} m/s
+                      </p>
+                      <p className="text-xs text-slate-400">{weather.observedAt}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl px-4 py-3 border border-slate-100 text-sm text-slate-400 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />날씨 불러오는 중...
+                  </div>
+                )}
+
+                {/* 시간별 예보 */}
+                {forecast.length > 0 && (
+                  <div>
+                    <p className="text-xs text-slate-500 mb-2">시간별 예보</p>
+                    <div className="overflow-x-auto">
+                      <div className="flex gap-2 pb-1" style={{ minWidth: 'max-content' }}>
+                        {forecast.slice(0, 10).map((f: ForecastHour, i: number) => (
+                          <div key={i} className="flex flex-col items-center gap-1 bg-white rounded-lg border border-slate-100 px-2.5 py-2 min-w-[52px]">
+                            <p className="text-xs text-slate-500">{f.time}</p>
+                            <SkyIcon sky={f.sky} pty={f.pty} />
+                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{f.tmp.toFixed(0)}°</p>
+                            <p className="text-xs text-blue-400">{f.pop}%</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-400 text-right">기상청 초단기실황 · 단기예보</p>
               </div>
             </CardContent>
           </Card>
