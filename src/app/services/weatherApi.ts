@@ -50,11 +50,23 @@ export interface ForecastHour {
 
 // ---- 발표 시각 계산 헬퍼 ------------------------------------------------
 
-// 초단기실황/예보: 매 정시 발표, 10분 후 공개
-function getUltraSrtBase(): { base_date: string; base_time: string } {
+// 초단기실황(getUltraSrtNcst): 매 정시 발표, 10분 후 공개
+function getNcstBase(): { base_date: string; base_time: string } {
   const now = new Date();
   let h = now.getHours();
   if (now.getMinutes() < 10) h -= 1;
+  if (h < 0) { h = 23; now.setDate(now.getDate() - 1); }
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return { base_date: `${y}${m}${d}`, base_time: `${String(h).padStart(2, '0')}00` };
+}
+
+// 초단기예보(getUltraSrtFcst): 매 정시 발표, 45분 후 공개
+function getFcstSrtBase(): { base_date: string; base_time: string } {
+  const now = new Date();
+  let h = now.getHours();
+  if (now.getMinutes() < 45) h -= 1;
   if (h < 0) { h = 23; now.setDate(now.getDate() - 1); }
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -107,49 +119,38 @@ async function kmaGet(
 // ---- 공개 API 함수 ------------------------------------------------------
 
 /**
- * 현재 날씨 반환 — getVilageFcst(단기예보)에서 현재 시각과 가장 가까운 예보 시각 추출
- * (초단기실황/초단기예보 대신 이미 동작 확인된 단기예보 API 하나로 통일)
+ * 실시간 날씨 반환
+ * - 기온·습도·풍속·강수형태: 초단기실황 getUltraSrtNcst (10분 후 공개)
+ * - 하늘상태: 초단기예보 getUltraSrtFcst (45분 후 공개, 실패 시 맑음 기본값)
  */
 export async function fetchCurrentWeather(): Promise<CurrentWeather> {
-  const base = getVilageBase();
-  const res = await kmaGet('getVilageFcst', base);
-  const items = res.response.body.items.item;
+  const ncstBase = getNcstBase();
 
-  const now = new Date();
-  const todayStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-  const curHHMM = `${String(now.getHours()).padStart(2, '0')}00`;
+  // 초단기실황: 기온(T1H), 습도(REH), 풍속(WSD), 강수형태(PTY)
+  const ncst = await kmaGet('getUltraSrtNcst', ncstBase);
+  const ncstItems = ncst.response.body.items.item;
+  const get = (cat: string) =>
+    parseFloat(ncstItems.find((i) => i.category === cat)?.obsrValue ?? '0');
 
-  // 현재 시각 이후 가장 가까운 예보 시각 찾기
-  const fcstKeys = [
-    ...new Set(
-      items
-        .filter((i) => i.fcstDate && i.fcstTime)
-        .filter(
-          (i) =>
-            i.fcstDate! > todayStr ||
-            (i.fcstDate! === todayStr && i.fcstTime! >= curHHMM),
-        )
-        .map((i) => `${i.fcstDate}|${i.fcstTime}`),
-    ),
-  ].sort();
+  // 초단기예보: 하늘상태(SKY) — 45분 임계값, 실패 시 기본값 1(맑음)
+  let sky = 1;
+  try {
+    const fcstBase = getFcstSrtBase();
+    const fcst = await kmaGet('getUltraSrtFcst', fcstBase);
+    const skyRaw = fcst.response.body.items.item.find((i) => i.category === 'SKY')?.fcstValue;
+    if (skyRaw) sky = parseInt(skyRaw);
+  } catch {
+    // 미발표 시간대이거나 오류 시 기본값 유지
+  }
 
-  if (fcstKeys.length === 0) throw new Error('현재 날씨 데이터 없음');
-
-  const [fcstDate, fcstTime] = fcstKeys[0].split('|');
-  const getCat = (cat: string) =>
-    parseFloat(
-      items.find(
-        (i) => i.fcstDate === fcstDate && i.fcstTime === fcstTime && i.category === cat,
-      )?.fcstValue ?? '0',
-    );
-
+  const dd = ncstBase.base_date;
   return {
-    temperature: getCat('TMP'),
-    humidity: getCat('REH'),
-    windSpeed: getCat('WSD'),
-    precipType: getCat('PTY'),
-    skyCondition: getCat('SKY') || 1,
-    observedAt: `${fcstDate.slice(0, 4)}-${fcstDate.slice(4, 6)}-${fcstDate.slice(6)} ${fcstTime.slice(0, 2)}:00`,
+    temperature: get('T1H'),
+    humidity: get('REH'),
+    windSpeed: get('WSD'),
+    precipType: get('PTY'),
+    skyCondition: sky,
+    observedAt: `${dd.slice(0, 4)}-${dd.slice(4, 6)}-${dd.slice(6)} ${ncstBase.base_time.slice(0, 2)}:00`,
   };
 }
 
