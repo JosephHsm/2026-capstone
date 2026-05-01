@@ -16,12 +16,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import {
-  generateWeatherData,
-  generateHourlyPowerData,
-} from "../services/mockData";
-import { fetchLatestTelemetry, mqttToStation, subscribeToTelemetry, ChargingStation } from "../services/api";
-import { Sun, Cloud, Droplets, Thermometer, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
+import { fetchLatestTelemetry, mqttToStation, subscribeToTelemetry, fetchTodaySchedule, ChargingStation, ScheduleResponse } from "../services/api";
+import { Sun, Zap, BatteryCharging, Activity, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
 // Generate solar forecast data
 const generateSolarForecast = () => {
@@ -55,14 +51,10 @@ export function EnergyMonitoring() {
     return unsubscribe;
   }, []);
 
-  const { data: weather } = useQuery({
-    queryKey: ["weather"],
-    queryFn: () => Promise.resolve(generateWeatherData()),
-  });
-
-  const { data: hourlyData } = useQuery({
-    queryKey: ["hourly-power"],
-    queryFn: () => Promise.resolve(generateHourlyPowerData()),
+  const { data: todaySchedule } = useQuery({
+    queryKey: ["schedule-today"],
+    queryFn: fetchTodaySchedule,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: solarForecast } = useQuery({
@@ -85,17 +77,17 @@ export function EnergyMonitoring() {
           <p className="text-slate-600 dark:text-slate-300 mt-1">태양광 발전 현황 및 기상 데이터 실시간 분석</p>
         </div>
 
-        {/* Weather Information */}
+        {/* 실시간 에너지 현황 (SSE 집계) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <Thermometer className="w-6 h-6 text-orange-600" />
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <Sun className="w-6 h-6 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">기온</p>
-                  <p className="text-2xl font-bold">{weather?.temperature.toFixed(1)}°C</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">태양광 발전</p>
+                  <p className="text-2xl font-bold">{totalSolarGen.toFixed(1)} <span className="text-sm font-normal">kW</span></p>
                 </div>
               </div>
             </CardContent>
@@ -105,11 +97,11 @@ export function EnergyMonitoring() {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-blue-100 rounded-lg">
-                  <Droplets className="w-6 h-6 text-blue-600" />
+                  <Zap className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">습도</p>
-                  <p className="text-2xl font-bold">{weather?.humidity.toFixed(0)}%</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">계통 소비</p>
+                  <p className="text-2xl font-bold">{totalGridConsumption.toFixed(1)} <span className="text-sm font-normal">kW</span></p>
                 </div>
               </div>
             </CardContent>
@@ -118,12 +110,16 @@ export function EnergyMonitoring() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-slate-100 rounded-lg">
-                  <Cloud className="w-6 h-6 text-slate-600 dark:text-slate-300" />
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <BatteryCharging className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">운량</p>
-                  <p className="text-2xl font-bold">{weather?.cloudCover.toFixed(0)}%</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">평균 ESS 충전율</p>
+                  <p className="text-2xl font-bold">
+                    {stations.length > 0
+                      ? (stations.reduce((s, st) => s + st.batteryLevel, 0) / stations.length).toFixed(1)
+                      : "—"} <span className="text-sm font-normal">%</span>
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -132,12 +128,15 @@ export function EnergyMonitoring() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <Sun className="w-6 h-6 text-yellow-600" />
+                <div className="p-3 bg-emerald-100 rounded-lg">
+                  <Activity className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">일사량</p>
-                  <p className="text-xl font-bold">{weather?.solarRadiation.toFixed(0)} W/m²</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">활성 충전소</p>
+                  <p className="text-2xl font-bold">
+                    {stations.filter(s => s.status === 'active').length}
+                    <span className="text-sm font-normal"> / {stations.length}</span>
+                  </p>
                 </div>
               </div>
             </CardContent>

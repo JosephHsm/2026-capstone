@@ -113,10 +113,28 @@ export function mqttToStation(s: MqttStation): ChargingStation {
     pEss: (power?.p_ess ?? 0) / 1000,
   };
 }
+export interface HourlyPlan {
+  hour: number;
+  essMode: string;
+  essPower: number;
+  gridUsage: number;
+  pvPriority: number;
+  transfer: { targetStationId: number; power: number }[];
+}
+
 export interface StationSchedule {
   stationId: number;
   stationName: string;
   hourlyPlan: HourlyPlan[];
+}
+
+export interface DailyStats {
+  date: string;
+  solar: number;
+  consumption: number;
+  grid: number;
+  avgSoc: number;
+  peakDemand: number;
 }
 
 export interface ScheduleResponse {
@@ -175,9 +193,14 @@ export async function fetchScheduleHistory(): Promise<ScheduleHistoryItem[]> {
   return res.json();
 }
 
-/** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행
- *  @returns true = 실행 성공, false = 텔레메트리 데이터 없음
- */
+/** 최근 N일 일별 통계 조회 */
+export async function fetchDailyStats(days = 30): Promise<DailyStats[]> {
+  const res = await fetch(`/api/stats/daily?days=${days}`);
+  if (!res.ok) throw new Error(`통계 조회 실패: ${res.status}`);
+  return res.json();
+}
+
+/** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행 */
 export async function triggerScheduleRunNow(): Promise<boolean> {
   const res = await fetch('/schedule/run-now', { method: 'POST' });
   if (res.status === 204) return false;

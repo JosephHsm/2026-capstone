@@ -459,13 +459,27 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  generateDailyStats,
-  generateHourlyPowerData,
-} from "../services/mockData";
+import { fetchDailyStats, fetchTodaySchedule, ScheduleResponse } from "../services/api";
 import { Calendar, TrendingUp, Download } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+
+function scheduleToHourlyData(schedule: ScheduleResponse) {
+  return Array.from({ length: 24 }, (_, hour) => {
+    let gridUsage = 0, essPower = 0;
+    for (const station of schedule.stations) {
+      const plan = station.hourlyPlan.find(p => p.hour === hour);
+      if (!plan) continue;
+      gridUsage += Math.max(0, plan.gridUsage);
+      essPower += plan.essPower;
+    }
+    return {
+      time: `${hour.toString().padStart(2, '0')}:00`,
+      predictedDemand: +gridUsage.toFixed(1),
+      predictedSolar: +essPower.toFixed(1),
+    };
+  });
+}
 
 // Generate monthly statistics
 const generateMonthlyStats = () => {
@@ -494,7 +508,8 @@ export function Statistics() {
 
   const { data: dailyStats } = useQuery({
     queryKey: ["daily-stats"],
-    queryFn: () => Promise.resolve(generateDailyStats()),
+    queryFn: () => fetchDailyStats(30),
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: monthlyStats } = useQuery({
@@ -507,10 +522,13 @@ export function Statistics() {
     queryFn: () => Promise.resolve(generateCostBreakdown()),
   });
 
-  const { data: hourlyData } = useQuery({
-    queryKey: ["hourly-power"],
-    queryFn: () => Promise.resolve(generateHourlyPowerData()),
+  const { data: todaySchedule } = useQuery({
+    queryKey: ["schedule-today"],
+    queryFn: fetchTodaySchedule,
+    staleTime: 5 * 60 * 1000,
   });
+
+  const hourlyData = todaySchedule ? scheduleToHourlyData(todaySchedule) : [];
 
   return (
       <div className="space-y-6">
