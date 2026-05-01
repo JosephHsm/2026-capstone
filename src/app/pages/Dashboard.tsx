@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Zap, Sun, BatteryCharging, Activity, CalendarCheck, Loader2 } from "lucide-react";
+import { Zap, Sun, BatteryCharging, Activity, CalendarCheck, Loader2, Thermometer, Droplets, Wind, Cloud, CloudRain, Snowflake } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { fetchCurrentWeather, skyToLabel, precipToLabel } from "../services/weatherApi";
 import {
   AreaChart,
   Area,
@@ -58,6 +59,13 @@ export function Dashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: weather } = useQuery({
+    queryKey: ["current-weather"],
+    queryFn: fetchCurrentWeather,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
   const totalSolar = stations.reduce((sum, s) => sum + s.solarGeneration, 0);
   const totalGrid = stations.reduce((sum, s) => sum + s.gridConsumption, 0);
   const avgBattery = stations.length > 0
@@ -73,6 +81,34 @@ export function Dashboard() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">통합 관제 대시보드</h1>
           <p className="text-slate-600 dark:text-slate-300 mt-1">AI 예측 모델 기반 실시간 모니터링</p>
         </div>
+
+        {/* 실시간 기상 현황 (기상청 초단기실황) */}
+        {weather && (
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-sky-50/60 border border-sky-100 rounded-xl text-sm text-slate-700">
+            <span className="font-semibold text-sky-700 flex items-center gap-1">
+              {weather.precipType === 1 || weather.precipType === 4 ? <CloudRain className="w-4 h-4" /> :
+               weather.precipType === 3 ? <Snowflake className="w-4 h-4" /> :
+               weather.skyCondition === 4 ? <Cloud className="w-4 h-4" /> :
+               <Sun className="w-4 h-4 text-yellow-400" />}
+              {weather.precipType > 0 ? precipToLabel(weather.precipType) : skyToLabel(weather.skyCondition)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Thermometer className="w-4 h-4 text-red-400" />
+              {weather.temperature.toFixed(1)}°C
+            </span>
+            <span className="flex items-center gap-1">
+              <Droplets className="w-4 h-4 text-blue-400" />
+              습도 {weather.humidity.toFixed(0)}%
+            </span>
+            <span className="flex items-center gap-1">
+              <Wind className="w-4 h-4 text-slate-400" />
+              풍속 {weather.windSpeed.toFixed(1)} m/s
+            </span>
+            <span className="ml-auto text-xs text-slate-400">
+              기준: {weather.observedAt} (기상청 초단기실황)
+            </span>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 클러스터 실시간 현황 (SSE 집계) */}

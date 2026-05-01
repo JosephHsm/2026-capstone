@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -17,25 +17,31 @@ import {
   Legend,
 } from "recharts";
 import { fetchLatestTelemetry, mqttToStation, subscribeToTelemetry, fetchTodaySchedule, ChargingStation, ScheduleResponse } from "../services/api";
+import { fetchWeatherForecast, estimateSolar, ForecastHour } from "../services/weatherApi";
 import { Sun, Zap, BatteryCharging, Activity, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 
-// Generate solar forecast data
-const generateSolarForecast = () => {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: `${i.toString().padStart(2, '0')}:00`,
-    predicted: i >= 6 && i < 18 ? 20 + Math.random() * 60 : 0,
-    actual: i >= 6 && i < 18 ? 18 + Math.random() * 55 : 0,
-  }));
-};
+// 전체 클러스터 태양광 설비 최대 용량 (kW) — 실제 설비 용량으로 교체하세요
+const SOLAR_MAX_KW = 200;
 
-// Generate renewable energy mix
-const generateEnergyMix = () => {
-  return [
-    { name: '태양광', value: 245, fill: '#f59e0b' },
-    { name: '계통전력', value: 580, fill: '#3b82f6' },
-    { name: 'ESS 방전', value: 120, fill: '#10b981' },
-  ];
-};
+// 스케줄 데이터 → 24시간 에너지 차트용 데이터 변환 (hourlyData 버그 수정)
+function scheduleToEnergyHourly(
+  schedule: ScheduleResponse,
+  forecast: ForecastHour[],
+): { hour: string; consumption: number; generation: number }[] {
+  return Array.from({ length: 24 }, (_, h) => {
+    let consumption = 0;
+    for (const station of schedule.stations) {
+      const plan = station.hourlyPlan.find((p) => p.hour === h);
+      if (plan) consumption += Math.max(0, plan.gridUsage);
+    }
+    const match = forecast.find((f) => parseInt(f.time) === h);
+    return {
+      hour: `${String(h).padStart(2, '0')}:00`,
+      consumption: +consumption.toFixed(1),
+      generation: estimateSolar(match?.sky ?? 1, h, SOLAR_MAX_KW),
+    };
+  });
+}
 
 export function EnergyMonitoring() {
   const [stations, setStations] = useState<ChargingStation[]>([]);
@@ -57,18 +63,48 @@ export function EnergyMonitoring() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: solarForecast } = useQuery({
-    queryKey: ["solar-forecast"],
-    queryFn: () => Promise.resolve(generateSolarForecast()),
-  });
-
-  const { data: energyMix } = useQuery({
-    queryKey: ["energy-mix"],
-    queryFn: () => Promise.resolve(generateEnergyMix()),
+  const { data: weatherForecast = [] } = useQuery({
+    queryKey: ["weather-forecast"],
+    queryFn: fetchWeatherForecast,
+    staleTime: 30 * 60 * 1000,
+    retry: false,
   });
 
   const totalSolarGen = stations.reduce((sum, s) => sum + s.solarGeneration, 0);
   const totalGridConsumption = stations.reduce((sum, s) => sum + s.gridConsumption, 0);
+
+  // 24시간 에너지 생산·소비 데이터 (스케줄 + 날씨 기반 태양광 추정)
+  const hourlyData = useMemo(() => {
+    if (!todaySchedule) return [];
+    return scheduleToEnergyHourly(todaySchedule, weatherForecast);
+  }, [todaySchedule, weatherForecast]);
+
+  // 태양광 발전량 예측 vs 실제 (날씨 예보 기반)
+  const solarForecast = useMemo(() => {
+    const currentHour = new Date().getHours();
+    return Array.from({ length: 24 }, (_, h) => {
+      const match = weatherForecast.find((f) => parseInt(f.time) === h);
+      return {
+        hour: `${String(h).padStart(2, '0')}:00`,
+        predicted: estimateSolar(match?.sky ?? 1, h, SOLAR_MAX_KW),
+        // 현재 시간 기준 실제 발전량(SSE), 그 외 시간대는 없음
+        actual: h === currentHour ? +totalSolarGen.toFixed(1) : undefined,
+      };
+    });
+  }, [weatherForecast, totalSolarGen]);
+
+  // 에너지원별 구성 (실시간 SSE 데이터 기반)
+  const energyMix = useMemo(() => {
+    const essDischarge = stations.reduce(
+      (s, st) => s + Math.max(0, -(st.pEss ?? 0)),
+      0,
+    );
+    return [
+      { name: '태양광',    value: +totalSolarGen.toFixed(1),        fill: '#f59e0b' },
+      { name: '계통전력',  value: +totalGridConsumption.toFixed(1), fill: '#3b82f6' },
+      { name: 'ESS 방전',  value: +essDischarge.toFixed(1),         fill: '#10b981' },
+    ];
+  }, [stations, totalSolarGen, totalGridConsumption]);
 
   return (
       <div className="space-y-6">
@@ -161,9 +197,14 @@ export function EnergyMonitoring() {
                   <div className="text-3xl font-bold text-orange-600">{totalSolarGen.toFixed(1)} kW</div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">전체 충전소 합계</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
-                    <div className="bg-orange-500 h-3 rounded-full" style={{ width: "68%" }} />
+                    <div
+                      className="bg-orange-500 h-3 rounded-full"
+                      style={{ width: `${Math.min(100, (totalSolarGen / SOLAR_MAX_KW) * 100).toFixed(0)}%` }}
+                    />
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">설비용량 대비 68%</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    설비용량 대비 {((totalSolarGen / SOLAR_MAX_KW) * 100).toFixed(1)}%
+                  </p>
                 </CardContent>
               </Card>
 
@@ -175,9 +216,12 @@ export function EnergyMonitoring() {
                   <div className="text-3xl font-bold text-blue-600">{totalGridConsumption.toFixed(1)} kW</div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">현재 사용 중</p>
                   <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
-                    <div className="bg-blue-500 h-3 rounded-full" style={{ width: "82%" }} />
+                    <div
+                      className="bg-blue-500 h-3 rounded-full"
+                      style={{ width: `${Math.min(100, (totalGridConsumption / (SOLAR_MAX_KW * 3)) * 100).toFixed(0)}%` }}
+                    />
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">계약전력 대비 82%</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">현재 계통 사용량</p>
                 </CardContent>
               </Card>
 

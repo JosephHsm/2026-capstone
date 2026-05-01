@@ -35,6 +35,12 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // 기상청 API허브 CORS 우회 프록시 (/kma/* → https://apihub.kma.go.kr/*)
+      '/kma': {
+        target: 'https://apihub.kma.go.kr',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kma/, ''),
+      },
     },
   },
 })
