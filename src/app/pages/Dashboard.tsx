@@ -68,11 +68,11 @@ export function Dashboard() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: weather } = useQuery({
+  const { data: weather, isLoading: weatherLoading, isError: weatherError } = useQuery({
     queryKey: ["current-weather"],
     queryFn: fetchCurrentWeather,
     staleTime: 10 * 60 * 1000,
-    retry: false,
+    retry: 1,
   });
 
   const { data: forecast = [] } = useQuery({
@@ -158,7 +158,15 @@ export function Dashboard() {
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">실시간 기상 현황</p>
 
                 {/* 현재 날씨 */}
-                {weather ? (
+                {weatherError ? (
+                  <div className="bg-red-50 rounded-xl px-4 py-3 border border-red-100 text-sm text-red-400">
+                    날씨 정보를 불러오지 못했습니다 (기상청 API 오류)
+                  </div>
+                ) : weatherLoading ? (
+                  <div className="bg-white rounded-xl px-4 py-3 border border-slate-100 text-sm text-slate-400 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />날씨 불러오는 중...
+                  </div>
+                ) : weather ? (
                   <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-100 shadow-sm">
                     <div className="flex items-center gap-3">
                       <SkyIcon sky={weather.skyCondition} pty={weather.precipType} />
@@ -183,11 +191,7 @@ export function Dashboard() {
                       <p className="text-xs text-slate-400">{weather.observedAt}</p>
                     </div>
                   </div>
-                ) : (
-                  <div className="bg-white rounded-xl px-4 py-3 border border-slate-100 text-sm text-slate-400 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />날씨 불러오는 중...
-                  </div>
-                )}
+                ) : null}
 
                 {/* 시간별 예보 */}
                 {forecast.length > 0 && (
