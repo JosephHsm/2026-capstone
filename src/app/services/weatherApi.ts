@@ -104,22 +104,25 @@ async function asosGet(
   if (!res.ok) throw new Error(`기상청 ASOS API 오류 ${res.status}`);
 
   const json = (await res.json()) as AsosApiResponse;
+  // NODATA_ERROR(03)는 에러가 아니라 빈 배열로 처리
+  if (json.response.header.resultCode === '03') return [];
   if (json.response.header.resultCode !== '00') {
     throw new Error(`기상청: ${json.response.header.resultMsg}`);
   }
 
   const raw = json.response.body.items.item;
+  if (!raw || raw === '') return [];
   // 단건 응답 시 객체로 오는 경우 배열로 통일
   return Array.isArray(raw) ? raw : [raw];
 }
 
 // ---- 공개 API 함수 ------------------------------------------------------
 
-/** 최신 1시간 ASOS 실황 관측값 반환 */
+/** 최신 ASOS 실황 관측값 반환 (최대 3시간 전까지 조회해 가장 최근 데이터 사용) */
 export async function fetchCurrentWeather(): Promise<CurrentWeather> {
-  const range = buildRange(1);
-  const items = await asosGet(range, '1');
-  const item = items[0];
+  const range = buildRange(3);
+  const items = await asosGet(range, '3');
+  const item = items[items.length - 1]; // 가장 최근 항목
 
   const rn = parseFloat(item?.rn || '0') || 0;
 

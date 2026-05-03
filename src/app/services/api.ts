@@ -202,7 +202,7 @@ export async function fetchDailyStats(days = 30): Promise<DailyStats[]> {
 
 /** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행 */
 export async function triggerScheduleRunNow(): Promise<boolean> {
-  const res = await fetch('/schedule/run-now', { method: 'POST' });
+  const res = await fetch('/schedule/run', { method: 'POST' });
   if (res.status === 204) return false;
   if (!res.ok) throw new Error(`스케줄 실행 실패: ${res.status}`);
   return true;
