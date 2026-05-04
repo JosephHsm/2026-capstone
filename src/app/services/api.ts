@@ -200,12 +200,26 @@ export async function fetchDailyStats(days = 30): Promise<DailyStats[]> {
   return res.json();
 }
 
-/** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행 */
+/** 현재 실시간 텔레메트리 기반 AI 스케줄 즉시 실행 및 결과 저장 */
 export async function triggerScheduleRunNow(): Promise<boolean> {
-  const res = await fetch('/schedule/run', { method: 'POST' });
+  const res = await fetch('/ai/request', { method: 'POST' });
   if (res.status === 204) return false;
   if (!res.ok) throw new Error(`스케줄 실행 실패: ${res.status}`);
   return true;
+}
+
+/** AI 서버로 전송할 Raw 요청 JSON 미리보기 (전송하지 않음) */
+export async function fetchAiRequestPreview(): Promise<Record<string, unknown>> {
+  const res = await fetch('/ai/v2/preview');
+  if (!res.ok) throw new Error(`AI 요청 미리보기 실패: ${res.status}`);
+  return res.json();
+}
+
+/** Raw 데이터를 AI 서버에 직접 전송 (응답은 AI 서버가 /ai/result로 콜백) */
+export async function sendRawAiRequest(): Promise<string> {
+  const res = await fetch('/ai/v2/send', { method: 'POST' });
+  if (!res.ok) throw new Error(`AI 서버 전송 실패: ${res.status}`);
+  return res.text();
 }
 
 // ---- SSE 실시간 구독 ---------------------------------------------------

@@ -256,7 +256,7 @@ export function Dashboard() {
                 <div className="flex flex-col items-center justify-center gap-2 text-slate-400 py-6">
                   <CalendarCheck className="w-10 h-10 opacity-30" />
                   <p className="text-sm">오늘 생성된 AI 스케줄이 없습니다</p>
-                  <p className="text-xs">매 시간 정각에 자동으로 스케줄이 생성됩니다</p>
+                  <p className="text-xs">매일 22:10에 AI 스케줄이 자동 생성됩니다</p>
                 </div>
               )}
             </CardContent>

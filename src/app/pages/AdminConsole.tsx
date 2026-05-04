@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -53,6 +53,7 @@ export function AdminConsole() {
   const [isRunningSchedule, setIsRunningSchedule] = useState(false);
 
   const queryClient = useQueryClient();
+  const prevRequestIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchLatestTelemetry().then(data => {
@@ -69,8 +70,21 @@ export function AdminConsole() {
     queryKey: ['schedule-history'],
     queryFn: fetchScheduleHistory,
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000,
     retry: false,
   });
+
+  // AI 서버 응답(/ai/result 콜백)으로 새 스케줄이 저장되면 토스트 알림
+  useEffect(() => {
+    if (!scheduleHistory || scheduleHistory.length === 0) return;
+    const latestId = scheduleHistory[0].requestId;
+    if (prevRequestIdRef.current !== null && prevRequestIdRef.current !== latestId) {
+      toast.success('AI 스케줄이 업데이트되었습니다. 최적화 페이지에서 확인하세요.', { duration: 6000 });
+      queryClient.invalidateQueries({ queryKey: ['schedule-today'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule-tomorrow'] });
+    }
+    prevRequestIdRef.current = latestId;
+  }, [scheduleHistory, queryClient]);
 
   // 실제 경고 계산 (SSE 스테이션 기반)
   const warningStations = stations.filter(s => s.status !== 'active');
@@ -102,12 +116,10 @@ export function AdminConsole() {
     try {
       const ok = await triggerScheduleRunNow();
       if (ok) {
-        toast.success('AI 스케줄 계산을 시작했습니다. 완료까지 약 1~2분 소요됩니다.');
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['schedule-history'] });
-          queryClient.invalidateQueries({ queryKey: ['schedule-today'] });
-          queryClient.invalidateQueries({ queryKey: ['schedule-tomorrow'] });
-        }, 5000);
+        toast.success('AI 스케줄이 생성되었습니다.');
+        queryClient.invalidateQueries({ queryKey: ['schedule-history'] });
+        queryClient.invalidateQueries({ queryKey: ['schedule-today'] });
+        queryClient.invalidateQueries({ queryKey: ['schedule-tomorrow'] });
       } else {
         toast.warning('현재 실시간 데이터가 없어 스케줄을 실행할 수 없습니다.');
       }
@@ -231,7 +243,7 @@ export function AdminConsole() {
                   <AlertDialogTitle>AI 스케줄 즉시 실행</AlertDialogTitle>
                   <AlertDialogDescription>
                     현재 실시간 텔레메트리를 기반으로 내일({new Date(Date.now() + 86400000).toLocaleDateString('ko-KR')})의
-                    AI 최적 스케줄을 즉시 계산합니다. 완료까지 약 1~2분 소요됩니다.
+                    AI 최적 스케줄을 즉시 계산하고 저장합니다.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -246,7 +258,7 @@ export function AdminConsole() {
               </AlertDialogContent>
             </AlertDialog>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              24시간마다 자동 실행됨
+              매일 22:10에 자동 실행됨
             </p>
           </CardContent>
         </Card>
