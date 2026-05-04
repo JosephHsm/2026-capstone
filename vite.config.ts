@@ -35,6 +35,10 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/ai': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       // 기상청 ASOS CORS 우회 프록시 (/asos/* → https://apis.data.go.kr/*)
       '/asos': {
         target: 'https://apis.data.go.kr',

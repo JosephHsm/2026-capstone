@@ -56,15 +56,24 @@ export interface ForecastHour {
 
 // ---- 날짜 범위 헬퍼 -----------------------------------------------------
 
-// ASOS는 약 1시간 전 자료까지 제공, hoursBack=1이면 최근 1시간 자료 1건 반환
+// ASOS는 전날(어제) 23:00까지만 제공 — 오늘 날짜로 요청하면 resultCode 99 반환
 function buildRange(hoursBack: number): {
   startDt: string; startHh: string; endDt: string; endHh: string;
 } {
-  const end = new Date();
-  end.setMinutes(0, 0, 0);
-  end.setHours(end.getHours() - 1); // 발표 지연 1시간
+  const now = new Date();
 
-  const start = new Date(end);
+  // 어제 23:00 이 API의 최대 endDt
+  const maxEnd = new Date(now);
+  maxEnd.setDate(maxEnd.getDate() - 1);
+  maxEnd.setHours(23, 0, 0, 0);
+
+  const end = new Date(now);
+  end.setMinutes(0, 0, 0);
+  end.setHours(end.getHours() - 1);
+
+  const effectiveEnd = end <= maxEnd ? end : maxEnd;
+
+  const start = new Date(effectiveEnd);
   start.setHours(start.getHours() - (hoursBack - 1));
 
   const fmt = (d: Date) => {
@@ -76,7 +85,7 @@ function buildRange(hoursBack: number): {
   };
 
   const s = fmt(start);
-  const e = fmt(end);
+  const e = fmt(effectiveEnd);
   return { startDt: s.date, startHh: s.hour, endDt: e.date, endHh: e.hour };
 }
 
