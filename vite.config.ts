@@ -45,6 +45,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/asos/, ''),
       },
+      // 기상청 apihub CORS 우회 프록시 (/kma/* → https://apihub.kma.go.kr/*)
+      '/kma': {
+        target: 'https://apihub.kma.go.kr',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/kma/, ''),
+      },
     },
   },
 })
