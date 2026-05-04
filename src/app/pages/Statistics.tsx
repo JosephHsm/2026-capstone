@@ -441,12 +441,9 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
@@ -455,9 +452,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 import { fetchDailyStats, fetchTodaySchedule, ScheduleResponse } from "../services/api";
 import { Calendar, Sun, Download } from "lucide-react";
@@ -481,26 +475,6 @@ function scheduleToHourlyData(schedule: ScheduleResponse) {
   });
 }
 
-// Generate monthly statistics
-const generateMonthlyStats = () => {
-  return Array.from({ length: 12 }, (_, i) => ({
-    month: `${i + 1}월`,
-    consumption: 45000 + Math.random() * 10000,
-    cost: 12000000 + Math.random() * 3000000,
-    solar: 8000 + Math.random() * 2000,
-    efficiency: 75 + Math.random() * 15,
-  }));
-};
-
-// Generate cost breakdown
-const generateCostBreakdown = () => {
-  return [
-    { name: '기본요금', value: 3200000, fill: '#3b82f6' },
-    { name: '전력량요금', value: 8500000, fill: '#10b981' },
-    { name: '피크요금', value: 1800000, fill: '#f59e0b' },
-    { name: '기타', value: 500000, fill: '#94a3b8' },
-  ];
-};
 
 export function Statistics() {
   const [period, setPeriod] = useState("monthly");
@@ -512,16 +486,6 @@ export function Statistics() {
     staleTime: 10 * 60 * 1000,
   });
 
-  const { data: monthlyStats } = useQuery({
-    queryKey: ["monthly-stats"],
-    queryFn: () => Promise.resolve(generateMonthlyStats()),
-  });
-
-  const { data: costBreakdown } = useQuery({
-    queryKey: ["cost-breakdown"],
-    queryFn: () => Promise.resolve(generateCostBreakdown()),
-  });
-
   const { data: todaySchedule } = useQuery({
     queryKey: ["schedule-today"],
     queryFn: fetchTodaySchedule,
@@ -530,7 +494,6 @@ export function Statistics() {
 
   const hourlyData = todaySchedule ? scheduleToHourlyData(todaySchedule) : [];
 
-  // 이번 달 실데이터 집계
   const thisMonth = new Date().toISOString().slice(0, 7);
 
   const thisMonthData = useMemo(
@@ -547,37 +510,6 @@ export function Statistics() {
     () => thisMonthData.reduce((s, d) => s + d.solar, 0),
     [thisMonthData]
   );
-
-  const renewableRate = thisMonthConsumption > 0
-    ? (thisMonthSolar / thisMonthConsumption) * 100 : 0;
-
-  const avgSocPct = useMemo(() =>
-    thisMonthData.length > 0
-      ? (thisMonthData.reduce((s, d) => s + d.avgSoc, 0) / thisMonthData.length) * 100
-      : 0,
-    [thisMonthData]
-  );
-
-  // 일별 데이터로부터 월별 집계 (mock 대체)
-  const monthlyDerived = useMemo(() => {
-    if (!dailyStats || dailyStats.length === 0) return generateMonthlyStats();
-    const map: Record<string, { consumption: number; solar: number }> = {};
-    for (const d of dailyStats) {
-      const m = d.date.slice(0, 7);
-      if (!map[m]) map[m] = { consumption: 0, solar: 0 };
-      map[m].consumption += d.consumption;
-      map[m].solar += d.solar;
-    }
-    return Object.entries(map)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({
-        month: `${parseInt(month.slice(5))}월`,
-        consumption: +v.consumption.toFixed(1),
-        solar: +v.solar.toFixed(1),
-        cost: +(v.consumption * 100).toFixed(0),
-        efficiency: v.consumption > 0 ? +(v.solar / v.consumption * 100).toFixed(1) : 0,
-      }));
-  }, [dailyStats]);
 
   return (
       <div className="space-y-6">
@@ -654,225 +586,60 @@ export function Statistics() {
           </Card>
         </div>
 
-        {/* Tabs for different views */}
-        <Tabs defaultValue="cost" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="cost">비용 분석</TabsTrigger>
-            <TabsTrigger value="power">전력 사용</TabsTrigger>
-            <TabsTrigger value="efficiency">효율성</TabsTrigger>
-          </TabsList>
+        {/* 전력 사용 */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>일별 전력 소비 추이</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <AreaChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="consumption"
+                    stackId="1"
+                    stroke="#3b82f6"
+                    fill="#3b82f6"
+                    name="총 소비량 (kWh)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="solar"
+                    stackId="2"
+                    stroke="#f59e0b"
+                    fill="#fed7aa"
+                    name="태양광 발전 (kWh)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="cost" className="space-y-6">
-            {/* Cost Breakdown (비용 절감 비교 차트는 제거됨) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>비용 구성 내역</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                          data={costBreakdown}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                      >
-                        {costBreakdown?.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => `₩${Number(value).toLocaleString()}`} />
-                    </PieChart>
-                  </ResponsiveContainer>
-
-                  <div className="mt-4 space-y-2">
-                    {costBreakdown?.map((item) => (
-                        <div key={item.name} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded" style={{ background: item.fill }} />
-                            <span>{item.name}</span>
-                          </div>
-                          <span className="font-medium">₩{item.value.toLocaleString()}</span>
-                        </div>
-                    ))}
-                    <div className="flex items-center justify-between font-bold pt-2 border-t">
-                      <span>총계</span>
-                      <span>
-                      ₩
-                        {costBreakdown
-                            ?.reduce((sum, item) => sum + item.value, 0)
-                            .toLocaleString()}
-                    </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>월별 비용 추이</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={monthlyDerived}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `${Number(value).toLocaleString()} kWh`} />
-                      <Legend />
-                      <Line
-                          type="monotone"
-                          dataKey="consumption"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          name="소비량 (kWh)"
-                          dot={{ fill: '#3b82f6', r: 4 }}
-                      />
-                      <Line
-                          type="monotone"
-                          dataKey="solar"
-                          stroke="#f59e0b"
-                          strokeWidth={2}
-                          name="태양광 (kWh)"
-                          dot={{ fill: '#f59e0b', r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="power" className="space-y-6">
-            {/* Daily Power Usage */}
-            <Card>
-              <CardHeader>
-                <CardTitle>일별 전력 소비 추이</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={dailyStats}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area
-                        type="monotone"
-                        dataKey="consumption"
-                        stackId="1"
-                        stroke="#3b82f6"
-                        fill="#3b82f6"
-                        name="총 소비량 (kWh)"
-                    />
-                    <Area
-                        type="monotone"
-                        dataKey="solar"
-                        stackId="2"
-                        stroke="#f59e0b"
-                        fill="#fed7aa"
-                        name="태양광 발전 (kWh)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Hourly Pattern */}
-            <Card>
-              <CardHeader>
-                <CardTitle>시간대별 전력 사용 패턴</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={hourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="predictedDemand" fill="#3b82f6" name="계통 구매 계획 (kW)" radius={[8, 8, 0, 0]} />
-                    <Bar dataKey="predictedSolar" fill="#10b981" name="ESS 운용 계획 (kW)" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="efficiency" className="space-y-6">
-            {/* Efficiency Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>월별 운영 효율성</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={monthlyDerived}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip formatter={(v) => `${Number(v).toFixed(1)}%`} />
-                    <Legend />
-                    <Line
-                        type="monotone"
-                        dataKey="efficiency"
-                        stroke="#10b981"
-                        strokeWidth={2}
-                        name="재생에너지 비율 (%)"
-                        dot={{ fill: '#10b981', r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">재생에너지 사용률</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-green-600">{renewableRate.toFixed(1)}%</div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">전체 에너지 중 태양광 비율</p>
-                  <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
-                    <div className="bg-green-500 h-3 rounded-full" style={{ width: `${Math.min(renewableRate, 100).toFixed(1)}%` }} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">ESS 활용률</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-blue-600">{avgSocPct.toFixed(1)}%</div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">이번 달 평균 ESS 충전율</p>
-                  <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
-                    <div className="bg-blue-500 h-3 rounded-full" style={{ width: `${Math.min(avgSocPct, 100).toFixed(1)}%` }} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm">피크 회피율</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">91.2%</div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">피크 시간대 전력 절감</p>
-                  <div className="mt-4 w-full bg-slate-200 rounded-full h-3">
-                    <div className="bg-purple-500 h-3 rounded-full" style={{ width: "91.2%" }} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>시간대별 전력 사용 패턴</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={hourlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="predictedDemand" fill="#3b82f6" name="계통 구매 계획 (kW)" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="predictedSolar" fill="#10b981" name="ESS 운용 계획 (kW)" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
   );
 }
